@@ -1700,7 +1700,12 @@ function _showSettingsDetail(catId) {
       + '<span style="font-size:12px;font-weight:500">or more items added</span>'
       + '</label>'
       + '<div style="font-size:11px;color:var(--muted);padding-left:22px">Checks every 15 minutes.</div>'
-      + '</div></div></div>'
+      + '</div>'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:var(--surface2);border-radius:var(--radius)">'
+      + '<span style="font-size:12px;color:var(--muted)">Last alert sent</span>'
+      + '<span id="settingsNotifyLastSent" style="font-size:12px;color:var(--text)">—</span>'
+      + '</div>'
+      + '</div></div>'
 
       + '<div style="display:flex;gap:8px;margin-top:8px">'
       + '<button class="btn primary" id="settingsSaveBtn" onclick="applySettings()"><i class="ti ti-check"></i> Save settings</button>'

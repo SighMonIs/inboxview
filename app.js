@@ -1369,12 +1369,17 @@ function selectAccentColour(hex, name, el){
 // ── Notification settings ──────────────────────────────────
 async function loadNotificationSettings(){
   try{
-    const rows = await sbGet('app_settings', '?key=in.(notify_email,notify_daily_enabled,notify_threshold_enabled,notify_threshold_count)');
+    const rows = await sbGet('app_settings', '?key=in.(notify_email,notify_daily_enabled,notify_threshold_enabled,notify_threshold_count,notify_threshold_last_sent)');
     const cfg = Object.fromEntries(rows.map(r=>[r.key, r.value]));
     document.getElementById('settingsNotifyEmail').value   = cfg.notify_email            || '';
     document.getElementById('settingsNotifyDaily').checked = cfg.notify_daily_enabled    === 'true';
     document.getElementById('settingsNotifyThreshold').checked = cfg.notify_threshold_enabled === 'true';
     document.getElementById('settingsNotifyCount').value   = cfg.notify_threshold_count  || '5';
+    var lastSentEl = document.getElementById('settingsNotifyLastSent');
+    if (lastSentEl) {
+      var ts = cfg.notify_threshold_last_sent;
+      lastSentEl.textContent = ts ? new Date(ts).toLocaleString('en-AU', {dateStyle:'medium',timeStyle:'short'}) : 'Never';
+    }
   }catch(e){ console.warn('Could not load notification settings:', e); }
 }
 
