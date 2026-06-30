@@ -1587,7 +1587,58 @@ function _showSettingsDetail(catId) {
   var detail = document.getElementById('inboxDetail');
   if (!detail) return;
 
-  if (catId === 'payment') {
+  if (catId === 'cats') {
+    detail.innerHTML = '<div class="inbox-detail">'
+      + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">Categories &amp; Options</div></div></div>'
+      + '<p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">Each category can have options — extra fields shown when adding an item. Drag <i class="ti ti-grip-vertical" style="font-size:12px"></i> to reorder options.</p>'
+      + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'
+      + '<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer">'
+      + '<input type="checkbox" id="showArchivedCb" style="accent-color:var(--accent)" onchange="toggleShowArchived(this)"> Show archived'
+      + '</label></div>'
+      + '<div id="catFlatList"></div>'
+      + '<button class="btn" style="width:100%;margin-top:8px" onclick="addCat()"><i class="ti ti-plus"></i> Add category</button>'
+      + '<div style="display:flex;gap:8px;margin-top:12px">'
+      + '<button class="btn primary" onclick="saveCatsAndOpts()"><i class="ti ti-cloud-upload"></i> Save</button>'
+      + '</div></div>';
+    if(typeof renderCatBlocks === 'function') {
+      var cb = document.getElementById('showArchivedCb');
+      if(cb) cb.checked = window.showArchivedCats || false;
+      renderCatBlocks();
+    }
+  } else if (catId === 'colours') {
+    detail.innerHTML = '<div class="inbox-detail">'
+      + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">Colour Library</div></div></div>'
+      + '<p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">Manage your available filament colours. Tick <strong style="color:var(--text)">Available</strong> if you currently have that colour in stock.</p>'
+      + '<div class="colour-mgr-hdr"><span>Swatch</span><span>Name</span><span>Hex code</span><span>Available</span><span></span></div>'
+      + '<div id="colourList"></div>'
+      + '<button class="btn" style="width:100%;margin-top:8px" onclick="addColour()"><i class="ti ti-plus"></i> Add colour</button>'
+      + '<div style="display:flex;gap:8px;margin-top:12px">'
+      + '<button class="btn primary" onclick="saveColours()"><i class="ti ti-cloud-upload"></i> Save</button>'
+      + '</div></div>';
+    if(typeof renderColourList === 'function') renderColourList();
+  } else if (catId === 'users') {
+    detail.innerHTML = '<div class="inbox-detail">'
+      + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">Users</div>'
+      + '<button class="btn sm" onclick="openAddUserForm()" style="margin-left:auto"><i class="ti ti-plus"></i> Add user</button>'
+      + '</div></div>'
+      + '<div id="userForm" style="display:none">'
+      + '<div style="background:var(--surface2);border-radius:var(--radius-lg);padding:14px;margin-bottom:14px">'
+      + '<div class="field-row">'
+      + '<div class="field"><label>Display name</label><input type="text" id="uf-name" placeholder="Their name"></div>'
+      + '<div class="field"><label>Email</label><input type="email" id="uf-email" placeholder="user@example.com"></div>'
+      + '</div>'
+      + '<div class="field-row" id="uf-password-row" style="display:none">'
+      + '<div class="field"><label>New password</label><input type="password" id="uf-password" placeholder="Leave blank to keep current"></div>'
+      + '</div>'
+      + '<div id="uf-error" style="font-size:11px;color:var(--red);margin-top:4px;display:none"></div>'
+      + '<div style="display:flex;gap:8px;margin-top:10px">'
+      + '<button class="btn" onclick="closeUserForm()">Cancel</button>'
+      + '<button class="btn primary" id="uf-save" onclick="saveUser()"><i class="ti ti-mail"></i> Send invite</button>'
+      + '</div></div></div>'
+      + '<div id="usersList"><div style="padding:16px;color:var(--muted)"><i class="ti ti-loader-2"></i> Loading users…</div></div>'
+      + '</div>';
+    if(typeof loadUsers === 'function') { window.editingUserId = null; loadUsers(); }
+  } else if (catId === 'payment') {
     var rows = paymentOptions.map(function(p, i) {
       return '<div style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border)">'
         + '<span style="flex:1;font-weight:500;color:' + (p.archived?'var(--muted)':'var(--text)') + (p.archived?';text-decoration:line-through':'') + '">' + esc(p.name) + '</span>'
@@ -1602,38 +1653,6 @@ function _showSettingsDetail(catId) {
       + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
       + '<button class="btn sm" onclick="_settingsAddPayment()"><i class="ti ti-plus"></i> Add Option</button>'
       + '</div></div>';
-  } else if (catId === 'cats') {
-    var catRows = cats.filter(function(c){return !c.archived;}).map(function(c) {
-      var n = new Set(orders.filter(function(r){return String(r.catId)===String(c.id);}).map(function(r){return r.orderId;})).size;
-      return '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border)">'
-        + '<span style="flex:1;font-weight:500;color:var(--text)">' + esc(c.name) + '</span>'
-        + '<span style="font-family:monospace;font-size:11px;color:var(--muted)">$' + c.price.toFixed(2) + '</span>'
-        + '<span style="font-size:10px;color:var(--muted);padding:2px 7px;background:var(--surface2);border-radius:10px">' + n + ' orders</span>'
-        + '</div>';
-    }).join('');
-    detail.innerHTML = '<div class="inbox-detail">'
-      + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">Categories &amp; Options</div></div></div>'
-      + '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:12px">' + (catRows||'<div style="padding:16px;color:var(--muted)">No categories</div>') + '</div>'
-      + '<button class="btn sm" onclick="openCatModal()"><i class="ti ti-external-link"></i> Open Category Editor</button>'
-      + '</div>';
-  } else if (catId === 'colours') {
-    var colRows = colours.map(function(c) {
-      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--border)">'
-        + '<div style="width:22px;height:22px;border-radius:50%;background:' + esc(c.code) + ';border:1px solid rgba(255,255,255,0.1);flex-shrink:0"></div>'
-        + '<span style="flex:1;font-weight:500;color:var(--text)">' + esc(c.name) + '</span>'
-        + '<span style="font-family:monospace;font-size:10px;color:var(--muted)">' + esc(c.code) + '</span>'
-        + '</div>';
-    }).join('');
-    detail.innerHTML = '<div class="inbox-detail">'
-      + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">Colour Library</div></div></div>'
-      + '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;max-height:400px;overflow-y:auto;margin-bottom:12px">' + (colRows||'<div style="padding:16px;color:var(--muted)">No colours</div>') + '</div>'
-      + '<button class="btn sm" onclick="openColourModal()"><i class="ti ti-external-link"></i> Open Colour Editor</button>'
-      + '</div>';
-  } else if (catId === 'users') {
-    detail.innerHTML = '<div class="inbox-detail">'
-      + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">Users</div></div></div>'
-      + '<button class="btn sm" onclick="openUsersModal()"><i class="ti ti-external-link"></i> Manage Users</button>'
-      + '</div>';
   } else if (catId === 'app') {
     detail.innerHTML = '<div class="inbox-detail">'
       + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">App Settings</div></div></div>'
