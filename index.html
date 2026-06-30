@@ -114,11 +114,13 @@ window.CONFIG = window.CONFIG || { SUPABASE_URL: '', SUPABASE_KEY: '' };
   <!-- ── Column 2: Order list ── -->
   <div class="inbox-list-col">
     <div class="inbox-list-header">
-      <div class="inbox-search-row">
-        <i class="ti ti-search inbox-search-icon"></i>
-        <input type="text" id="search" placeholder="Search&hellip;" oninput="renderTable();toggleSearchClear()">
-        <button id="searchClear" onclick="document.getElementById('search').value='';renderTable();toggleSearchClear()" style="display:none;background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0 2px;line-height:1;flex-shrink:0"><i class="ti ti-x"></i></button>
-        <button class="topbar-item primary-item ti-e" onclick="openAddModal()" title="New Order" style="flex-shrink:0;margin-left:4px">
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px">
+        <div class="inbox-search-row" style="flex:1;margin-bottom:0">
+          <i class="ti ti-search inbox-search-icon"></i>
+          <input type="text" id="search" placeholder="Search&hellip;" oninput="renderTable();toggleSearchClear()">
+          <button id="searchClear" onclick="document.getElementById('search').value='';renderTable();toggleSearchClear()" style="display:none;background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0 2px;line-height:1;flex-shrink:0"><i class="ti ti-x"></i></button>
+        </div>
+        <button class="topbar-item primary-item ti-e" onclick="openAddModal()" title="New Order" style="flex-shrink:0">
           <i class="ti ti-plus"></i><span class="ti-label">New Order</span>
         </button>
       </div>
@@ -157,7 +159,7 @@ window.CONFIG = window.CONFIG || { SUPABASE_URL: '', SUPABASE_KEY: '' };
       <div class="inbox-empty-state"><i class="ti ti-loader-2"></i> Loading&hellip;</div>
     </div>
     <div class="inbox-list-footer">
-      <span id="footerVersion">v1.4.4</span>
+      <span id="footerVersion">v1.4.5</span>
       <span style="color:var(--border2)">&middot;</span>
       <span id="statusMsg" class="footer-status">Loading&hellip;</span>
     </div>
