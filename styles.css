@@ -7,8 +7,6 @@ body{overflow:hidden;background:#1f1f1f;margin:0;padding:0;}
   display:flex;flex-direction:column;gap:6px;
   height:calc(100vh - 20px);
   overflow:hidden;
-  border-radius:14px;
-  border:1px solid rgba(255,255,255,0.1);
   background:#111;
 }
 
@@ -19,6 +17,7 @@ body{overflow:hidden;background:#1f1f1f;margin:0;padding:0;}
   overflow:hidden;
   align-items:stretch;
   border-radius:10px;
+  border:1px solid rgba(255,255,255,0.1);
 }
 
 /* Col 2 — order list */
@@ -645,6 +644,7 @@ thead th.sortable{user-select:none;}
   height:54px;flex-shrink:0;
   background:var(--surface);
   border-radius:10px;
+  border:1px solid rgba(255,255,255,0.1);
   display:flex;align-items:center;flex-wrap:nowrap;
   gap:2px;padding:0 8px;
   z-index:100;
