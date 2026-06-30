@@ -99,6 +99,10 @@ function orderNumFromId(orderId) {
   return m ? '#' + m[1] : '#' + orderId;
 }
 
+function toggleSearchClear(){
+  const el = document.getElementById('searchClear');
+  if(el) el.style.display = document.getElementById('search').value ? 'flex' : 'none';
+}
 function renderTable(){
   const q = document.getElementById('search').value.toLowerCase();
   const fStatuses = getFilterValues('status');
