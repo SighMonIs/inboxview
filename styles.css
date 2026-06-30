@@ -1,13 +1,12 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 
 /* ── Centered app shell ──────────────────────────────────── */
-body{overflow:hidden;background:#1B1B1B;margin:0;padding:0;}
+body{overflow:hidden;background:#0C0B11;margin:0;padding:0;}
 #mainApp{
   max-width:1200px;margin:10px auto;
   display:flex;flex-direction:column;gap:6px;
   height:calc(100vh - 20px);
   overflow:hidden;
-  background:#1B1B1B;
 }
 
 /* ── Inbox 3-col layout ──────────────────────────────────── */
