@@ -6,7 +6,6 @@ body{overflow:hidden;background:#0C0B11;margin:0;padding:0;}
   max-width:1200px;margin:10px auto;
   display:flex;flex-direction:column;gap:6px;
   height:calc(100vh - 20px);
-  overflow:hidden;
 }
 
 /* ── Inbox 3-col layout ──────────────────────────────────── */
