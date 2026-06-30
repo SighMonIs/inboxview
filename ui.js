@@ -1618,6 +1618,7 @@ function _showSettingsDetail(catId) {
       + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">Users</div>'
       + '<button class="btn sm" onclick="openAddUserForm()" style="margin-left:auto"><i class="ti ti-plus"></i> Add user</button>'
       + '</div></div>'
+      + '<p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">Invite team members to PrintDesk. They will receive an email to set their password.</p>'
       + '<div id="userForm" style="display:none">'
       + '<div style="background:var(--surface2);border-radius:var(--radius-lg);padding:14px;margin-bottom:14px">'
       + '<div class="field-row">'
@@ -1648,6 +1649,7 @@ function _showSettingsDetail(catId) {
       + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">Payment Options</div>'
       + '<button class="btn sm" style="margin-left:auto" onclick="_settingsAddPayment()"><i class="ti ti-plus"></i> Add Option</button>'
       + '</div></div>'
+      + '<p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">Manage how customers pay. Enable <strong style="color:var(--text)">revenue</strong> on a method to include it in sales totals.</p>'
       + '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden">' + rows + '</div>'
       + '</div>';
   } else if (catId === 'app') {
