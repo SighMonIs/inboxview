@@ -16,7 +16,7 @@ body{overflow:hidden;background:var(--base);margin:0;padding:0;}
   overflow:hidden;
   align-items:stretch;
   border-radius:10px;
-  background:color-mix(in srgb, black 15%, var(--base));
+  background:var(--bg);
   box-shadow:0px 0px 2px rgba(255,255,255,0.05),inset 0 0 4px rgba(0,0,0,0.7);
 }
 
@@ -197,13 +197,17 @@ body{overflow:hidden;background:var(--base);margin:0;padding:0;}
 .inbox-empty-state i{font-size:32px;display:block;margin-bottom:10px;opacity:0.4;}
 
 :root{
-  --bg:#131313;--surface:#1a1a1a;--surface2:#232323;--surface3:#2e2e2e;
-  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.11);
+  --bg:      color-mix(in srgb, black 15%, var(--base));
+  --surface: color-mix(in srgb, white 5%,  var(--base));
+  --surface2:color-mix(in srgb, white 10%, var(--base));
+  --surface3:color-mix(in srgb, white 16%, var(--base));
+  --border:  rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.11);
   --text:#e8e8e6;--muted:#808080;
   --accent:#e8d5a3;--accent2:#c4a96b;
   --green:#5cb87a;--blue:#5b9cf6;--amber:#e8a93a;--red:#e05c5c;--orange:#e07c3a;
   --radius:8px;--radius-lg:12px;
-  --tbl-odd:#1a1a1a;--tbl-head:#222222;
+  --tbl-head:color-mix(in srgb, white 8%, var(--base));
 }
 html,body{height:100%;background:var(--base);}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;color:var(--text);font-size:13px;line-height:1.5;}
@@ -214,7 +218,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 .hdr-actions{display:flex;gap:8px;align-items:center;}
 
 .btn{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 14px;font-size:12px;font-weight:500;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);cursor:pointer;white-space:nowrap;transition:all 0.12s;}
-.btn:hover{border-color:rgba(255,255,255,0.25);background:#2a2a2f;}
+.btn:hover{border-color:rgba(255,255,255,0.25);background:var(--surface3);}
 .btn.primary{background:var(--accent);color:#1a1408;border-color:var(--accent2);font-weight:600;}
 .btn.primary:hover{background:var(--accent2);}
 .btn.icon-only{width:34px;padding:0;justify-content:center;}
@@ -241,12 +245,12 @@ thead th.sortable{cursor:pointer;}
 thead th.sortable:hover{color:var(--text);}
 thead th.sort-active{color:var(--accent);}
 tbody tr{transition:background 0.1s;background:var(--bg);}
-tbody tr.row-alt{background:var(--tbl-odd);}
+tbody tr.row-alt{background:var(--bg);}
 tbody td{border-top:1px solid var(--border);}
 tbody tr:first-child td{border-top:none;}
 tbody tr:hover,
 tbody tr.has-note:hover + tr.note-inline-row,
-tbody tr:has(+ tr.note-inline-row:hover){background:#272730;}
+tbody tr:has(+ tr.note-inline-row:hover){background:var(--surface2);}
 tbody tr.inner-row td:nth-child(-n+3){border-top:none;}
 td.item-connector{position:relative;}
 td.item-connector::after{content:'';position:absolute;right:10px;bottom:calc(50% - 1px);width:10px;height:10px;border-left:1px solid var(--border);border-bottom:1px solid var(--border);border-radius:0 0 0 2px;}
@@ -260,11 +264,11 @@ tbody tr.has-note td{border-bottom:none;}
 tbody tr.note-inline-row + tr td{border-top:1px solid var(--border);}
 
 .badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:2px;text-transform:uppercase;letter-spacing:0.3px;}
-.b-pending  {background:rgba(232,169,58,0.15);color:var(--amber);border:1px solid rgba(232,169,58,0.3);}
-.b-printing {background:rgba(91,156,246,0.15);color:var(--blue); border:1px solid rgba(91,156,246,0.3);}
-.b-complete {background:rgba(92,184,122,0.15);color:var(--green);border:1px solid rgba(92,184,122,0.3);}
-.b-cancelled{background:rgba(224,92,92,0.15); color:var(--red);  border:1px solid rgba(224,92,92,0.3);}
-.b-on-hold  {background:rgba(224,124,58,0.15);color:var(--orange);border:1px solid rgba(224,124,58,0.3);}
+.b-pending  {background:color-mix(in srgb,var(--amber) 15%,transparent);color:var(--amber); border-color:color-mix(in srgb,var(--amber) 35%,transparent);}
+.b-printing {background:color-mix(in srgb,var(--blue)  15%,transparent);color:var(--blue);  border-color:color-mix(in srgb,var(--blue)  35%,transparent);}
+.b-complete {background:color-mix(in srgb,var(--green) 15%,transparent);color:var(--green); border-color:color-mix(in srgb,var(--green) 35%,transparent);}
+.b-cancelled{background:color-mix(in srgb,var(--red)   15%,transparent);color:var(--red);   border-color:color-mix(in srgb,var(--red)   35%,transparent);}
+.b-on-hold  {background:color-mix(in srgb,var(--orange)15%,transparent);color:var(--orange);border-color:color-mix(in srgb,var(--orange)35%,transparent);}
 
 .status-select{
   font-size:10px;font-weight:600;
@@ -281,11 +285,11 @@ tbody tr.note-inline-row + tr td{border-top:1px solid var(--border);}
   transition:all 0.12s;
 }
 .status-select:hover{filter:brightness(1.15);}
-.status-select.b-pending  {background:rgba(232,169,58,0.15);color:#e8a93a;border-color:rgba(232,169,58,0.4);}
-.status-select.b-printing {background:rgba(91,156,246,0.15); color:#5b9cf6;border-color:rgba(91,156,246,0.4);}
-.status-select.b-complete {background:rgba(92,184,122,0.15); color:#5cb87a;border-color:rgba(92,184,122,0.4);}
-.status-select.b-cancelled{background:rgba(224,92,92,0.15);  color:#e05c5c;border-color:rgba(224,92,92,0.4);}
-.status-select.b-on-hold  {background:rgba(224,124,58,0.15); color:#e07c3a;border-color:rgba(224,124,58,0.4);}
+.status-select.b-pending  {background:color-mix(in srgb,var(--amber) 15%,transparent);color:var(--amber); border-color:color-mix(in srgb,var(--amber) 40%,transparent);}
+.status-select.b-printing {background:color-mix(in srgb,var(--blue)  15%,transparent);color:var(--blue);  border-color:color-mix(in srgb,var(--blue)  40%,transparent);}
+.status-select.b-complete {background:color-mix(in srgb,var(--green) 15%,transparent);color:var(--green); border-color:color-mix(in srgb,var(--green) 40%,transparent);}
+.status-select.b-cancelled{background:color-mix(in srgb,var(--red)   15%,transparent);color:var(--red);   border-color:color-mix(in srgb,var(--red)   40%,transparent);}
+.status-select.b-on-hold  {background:color-mix(in srgb,var(--orange)15%,transparent);color:var(--orange);border-color:color-mix(in srgb,var(--orange)40%,transparent);}
 .status-select option{background:var(--surface2);color:var(--text);font-size:12px;}
 
 .order-id-badge{font-family:ui-monospace,'Cascadia Code','Fira Code','Consolas',monospace;font-size:10px;color:var(--muted);display:inline-block;}
@@ -702,17 +706,17 @@ thead th.sortable{user-select:none;}
 }
 .status-dd-btn span{text-align:center;}
 .status-dd-btn:hover{filter:brightness(1.15);}
-.status-dd-btn.b-pending  {background:rgba(232,169,58,0.15);color:#e8a93a;border-color:rgba(232,169,58,0.4);}
-.status-dd-btn.b-printing {background:rgba(91,156,246,0.15);color:#5b9cf6;border-color:rgba(91,156,246,0.4);}
-.status-dd-btn.b-complete {background:rgba(92,184,122,0.15);color:#5cb87a;border-color:rgba(92,184,122,0.4);}
-.status-dd-btn.b-cancelled{background:rgba(224,92,92,0.15); color:#e05c5c;border-color:rgba(224,92,92,0.4);}
-.status-dd-btn.b-on-hold  {background:rgba(224,124,58,0.15);color:#e07c3a;border-color:rgba(224,124,58,0.4);}
+.status-dd-btn.b-pending  {background:color-mix(in srgb,var(--amber) 15%,transparent);color:var(--amber); border-color:color-mix(in srgb,var(--amber) 40%,transparent);}
+.status-dd-btn.b-printing {background:color-mix(in srgb,var(--blue)  15%,transparent);color:var(--blue);  border-color:color-mix(in srgb,var(--blue)  40%,transparent);}
+.status-dd-btn.b-complete {background:color-mix(in srgb,var(--green) 15%,transparent);color:var(--green); border-color:color-mix(in srgb,var(--green) 40%,transparent);}
+.status-dd-btn.b-cancelled{background:color-mix(in srgb,var(--red)   15%,transparent);color:var(--red);   border-color:color-mix(in srgb,var(--red)   40%,transparent);}
+.status-dd-btn.b-on-hold  {background:color-mix(in srgb,var(--orange)15%,transparent);color:var(--orange);border-color:color-mix(in srgb,var(--orange)40%,transparent);}
 .order-status-dd{border-width:2px;}
-.order-status-dd.b-pending  {border-color:rgba(232,169,58,0.6);}
-.order-status-dd.b-printing {border-color:rgba(91,156,246,0.6);}
-.order-status-dd.b-complete {border-color:rgba(92,184,122,0.6);}
-.order-status-dd.b-cancelled{border-color:rgba(224,92,92,0.6);}
-.order-status-dd.b-on-hold  {border-color:rgba(224,124,58,0.6);}
+.order-status-dd.b-pending  {border-color:color-mix(in srgb,var(--amber) 60%,transparent);}
+.order-status-dd.b-printing {border-color:color-mix(in srgb,var(--blue)  60%,transparent);}
+.order-status-dd.b-complete {border-color:color-mix(in srgb,var(--green) 60%,transparent);}
+.order-status-dd.b-cancelled{border-color:color-mix(in srgb,var(--red)   60%,transparent);}
+.order-status-dd.b-on-hold  {border-color:color-mix(in srgb,var(--orange)60%,transparent);}
 .status-dd-btn i{font-size:10px;}
 .status-dd-list{
   position:fixed;
@@ -730,11 +734,11 @@ thead th.sortable{user-select:none;}
   transition:filter 0.12s;
 }
 .status-dd-opt:hover{filter:brightness(1.2);}
-.status-dd-opt.b-pending  {background:rgba(232,169,58,0.15);color:#e8a93a;border-color:rgba(232,169,58,0.4);}
-.status-dd-opt.b-printing {background:rgba(91,156,246,0.15);color:#5b9cf6;border-color:rgba(91,156,246,0.4);}
-.status-dd-opt.b-complete {background:rgba(92,184,122,0.15);color:#5cb87a;border-color:rgba(92,184,122,0.4);}
-.status-dd-opt.b-cancelled{background:rgba(224,92,92,0.15); color:#e05c5c;border-color:rgba(224,92,92,0.4);}
-.status-dd-opt.b-on-hold  {background:rgba(224,124,58,0.15);color:#e07c3a;border-color:rgba(224,124,58,0.4);}
+.status-dd-opt.b-pending  {background:color-mix(in srgb,var(--amber) 15%,transparent);color:var(--amber); border-color:color-mix(in srgb,var(--amber) 40%,transparent);}
+.status-dd-opt.b-printing {background:color-mix(in srgb,var(--blue)  15%,transparent);color:var(--blue);  border-color:color-mix(in srgb,var(--blue)  40%,transparent);}
+.status-dd-opt.b-complete {background:color-mix(in srgb,var(--green) 15%,transparent);color:var(--green); border-color:color-mix(in srgb,var(--green) 40%,transparent);}
+.status-dd-opt.b-cancelled{background:color-mix(in srgb,var(--red)   15%,transparent);color:var(--red);   border-color:color-mix(in srgb,var(--red)   40%,transparent);}
+.status-dd-opt.b-on-hold  {background:color-mix(in srgb,var(--orange)15%,transparent);color:var(--orange);border-color:color-mix(in srgb,var(--orange)40%,transparent);}
 .status-dd-opt.active{outline:2px solid var(--text);outline-offset:1px;}
 
 /* ── Accent swatch grid (filament colours) ── */
