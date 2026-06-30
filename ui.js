@@ -1571,12 +1571,7 @@ function _renderViewSettings() {
       + '<div class="inbox-card-subject">' + cat.desc + '</div>'
       + '</div></div>';
   }).join('');
-  if (_selectedSettingsCat) {
-    _showSettingsDetail(_selectedSettingsCat);
-  } else {
-    var detail = document.getElementById('inboxDetail');
-    if (detail) detail.innerHTML = '<div class="inbox-no-selection"><i class="ti ti-settings"></i><p>Select a category</p></div>';
-  }
+  _showSettingsDetail(_selectedSettingsCat || _SETTINGS_CATS[0].id);
 }
 
 function _showSettingsDetail(catId) {
