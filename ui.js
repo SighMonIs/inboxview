@@ -1593,10 +1593,11 @@ function _showSettingsDetail(catId) {
       + '<p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">Each category can have options — extra fields shown when adding an item. Drag <i class="ti ti-grip-vertical" style="font-size:12px"></i> to reorder options.</p>'
       + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'
       + '<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer">'
-      + '<input type="checkbox" id="showArchivedCb" style="accent-color:var(--accent)" onchange="toggleShowArchived(this)"> Show archived'
-      + '</label></div>'
+      + '<input type="checkbox" id="showArchivedCb" onchange="toggleShowArchived(this)"> Show archived'
+      + '</label>'
+      + '<button class="btn sm" style="margin-left:auto" onclick="addCat()"><i class="ti ti-plus"></i> Add category</button>'
+      + '</div>'
       + '<div id="catFlatList"></div>'
-      + '<button class="btn" style="width:100%;margin-top:8px" onclick="addCat()"><i class="ti ti-plus"></i> Add category</button>'
       + '<div style="display:flex;gap:8px;margin-top:12px">'
       + '<button class="btn primary" onclick="saveCatsAndOpts()"><i class="ti ti-cloud-upload"></i> Save</button>'
       + '</div></div>';
@@ -1757,4 +1758,39 @@ function _renderViewUsers() {
 }
 
 function updateSidebarBadges() {}
+
+function initSteppers(root) {
+  (root || document).querySelectorAll('input[type=number]:not(.ns-init)').forEach(function(input) {
+    if (input.closest('.stepper') || input.closest('.num-stepper')) return;
+    input.classList.add('ns-init');
+    var wrap = document.createElement('div');
+    wrap.className = 'num-stepper';
+    var w = input.style.width;
+    if (w) { wrap.style.width = w; input.style.width = ''; } else { wrap.style.width = '100%'; }
+    input.parentNode.insertBefore(wrap, input);
+    function fire() { input.dispatchEvent(new Event('input',{bubbles:true})); input.dispatchEvent(new Event('change',{bubbles:true})); }
+    var dec = document.createElement('button');
+    dec.type = 'button'; dec.className = 'ns-btn'; dec.textContent = '−';
+    dec.addEventListener('click', function(){ input.stepDown(); fire(); });
+    var inc = document.createElement('button');
+    inc.type = 'button'; inc.className = 'ns-btn'; inc.textContent = '+';
+    inc.addEventListener('click', function(){ input.stepUp(); fire(); });
+    wrap.appendChild(dec); wrap.appendChild(input); wrap.appendChild(inc);
+  });
+}
+
+(function() {
+  var obs = new MutationObserver(function(mutations) {
+    mutations.forEach(function(m) {
+      m.addedNodes.forEach(function(node) {
+        if (node.nodeType !== 1) return;
+        initSteppers(node.matches && node.matches('input[type=number]') ? node.parentNode : node);
+      });
+    });
+  });
+  document.addEventListener('DOMContentLoaded', function() {
+    initSteppers(document.body);
+    obs.observe(document.body, {childList:true, subtree:true});
+  });
+})();
 
