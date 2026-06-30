@@ -123,7 +123,7 @@ window.CONFIG = window.CONFIG || { SUPABASE_URL: '', SUPABASE_KEY: '' };
       </div>
       <div class="inbox-sort-row">
         <div class="filter-wrap" id="filterWrap">
-          <button class="sort-btn-main" id="filterBtn" onclick="toggleFilterPanel(event)" style="border-radius:var(--radius);border:1px solid var(--border2);height:34px;padding:0 10px;gap:6px">
+          <button class="sort-btn-main" id="filterBtn" onclick="toggleFilterPanel(event)" style="border-radius:var(--radius);border:none;height:34px;padding:0 10px;gap:6px">
             <i class="ti ti-filter"></i> Filter <span id="filterCount" style="display:none;color:var(--accent);font-weight:700;margin-left:2px"></span>
           </button>
           <div class="filter-panel" id="filterPanel" style="display:none">
@@ -156,7 +156,7 @@ window.CONFIG = window.CONFIG || { SUPABASE_URL: '', SUPABASE_KEY: '' };
       <div class="inbox-empty-state"><i class="ti ti-loader-2"></i> Loading&hellip;</div>
     </div>
     <div class="inbox-list-footer">
-      <span id="footerVersion">v1.3.8</span>
+      <span id="footerVersion">v1.3.9</span>
       <span style="color:var(--border2)">&middot;</span>
       <span id="statusMsg" class="footer-status">Loading&hellip;</span>
     </div>

@@ -37,7 +37,7 @@ body{overflow:hidden;background:var(--base);margin:0;padding:0;}
 }
 .inbox-search-row{
   display:flex;align-items:center;gap:6px;
-  background:var(--surface2);border:1px solid var(--border2);
+  background:var(--surface2);border:none;
   border-radius:var(--radius);padding:0 8px;
   margin-bottom:10px;
 }
@@ -199,7 +199,7 @@ body{overflow:hidden;background:var(--base);margin:0;padding:0;}
 :root{
   --bg:      color-mix(in srgb, black 15%, var(--base));
   --surface: color-mix(in srgb, white 5%,  var(--base));
-  --surface2:color-mix(in srgb, black 25%, var(--base));
+  --surface2:color-mix(in srgb, black 35%, var(--base));
   --surface3:color-mix(in srgb, white 16%, var(--base));
   --border:  rgba(255,255,255,0.07);
   --border2: rgba(255,255,255,0.11);
@@ -873,10 +873,10 @@ thead th.sortable{user-select:none;}
 .filter-wrap{position:relative;}
 .filter-panel{
   position:fixed;
-  background:var(--surface);border:1px solid var(--border2);
+  background:var(--surface2);border:none;
   border-radius:var(--radius-lg);padding:12px 14px;
   min-width:200px;z-index:500;
-  box-shadow:0 8px 24px rgba(0,0,0,0.4);
+  box-shadow:0 8px 24px rgba(0,0,0,0.5);
   max-height:70vh;overflow-y:auto;
 }
 .filter-section-title{
@@ -915,7 +915,7 @@ thead th.sortable{user-select:none;}
 .sort-btn-wrap{position:relative;}
 .sort-btn-group{
   display:flex;align-items:center;
-  border:1px solid var(--border2);border-radius:var(--radius);
+  border:none;border-radius:var(--radius);
   overflow:hidden;
 }
 .sort-btn-main{
@@ -930,21 +930,20 @@ thead th.sortable{user-select:none;}
   display:flex;align-items:center;justify-content:center;
   width:32px;height:34px;
   background:var(--surface2);
-  border:none;border-left:1px solid var(--border2);
+  border:none;border-left:1px solid rgba(255,255,255,0.05);
   color:var(--muted);font-size:14px;cursor:pointer;
   transition:background 0.12s,color 0.12s;
 }
 .sort-btn-dir:hover{background:var(--surface);color:var(--text);}
-.sort-btn-group.active{border-color:var(--accent);}
 .sort-btn-group.active .sort-btn-main,
 .sort-btn-group.active .sort-btn-dir{color:var(--accent);}
 /* Sort panel reuses filter-panel styles */
 .sort-panel{
   position:fixed;
-  background:var(--surface);border:1px solid var(--border2);
+  background:var(--surface2);border:none;
   border-radius:var(--radius-lg);padding:12px 14px;
   min-width:180px;z-index:500;
-  box-shadow:0 8px 24px rgba(0,0,0,0.4);
+  box-shadow:0 8px 24px rgba(0,0,0,0.5);
 }
 .sort-option{
   display:flex;align-items:center;gap:8px;
