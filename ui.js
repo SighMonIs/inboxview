@@ -1616,10 +1616,11 @@ function _showSettingsDetail(catId) {
     if(typeof renderColourList === 'function') renderColourList();
   } else if (catId === 'users') {
     detail.innerHTML = '<div class="inbox-detail">'
-      + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">Users</div>'
-      + '<button class="btn sm" onclick="openAddUserForm()" style="margin-left:auto"><i class="ti ti-plus"></i> Add user</button>'
-      + '</div></div>'
+      + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">Users</div></div></div>'
       + '<p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">Invite team members to PrintDesk. They will receive an email to set their password.</p>'
+      + '<div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:10px">'
+      + '<button class="btn sm" onclick="openAddUserForm()"><i class="ti ti-plus"></i> Add user</button>'
+      + '</div>'
       + '<div id="userForm" style="display:none">'
       + '<div style="background:var(--surface2);border-radius:var(--radius-lg);padding:14px;margin-bottom:14px">'
       + '<div class="field-row">'
@@ -1647,15 +1648,17 @@ function _showSettingsDetail(catId) {
         + '</div>';
     }).join('');
     detail.innerHTML = '<div class="inbox-detail">'
-      + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">Payment Options</div>'
-      + '<button class="btn sm" style="margin-left:auto" onclick="_settingsAddPayment()"><i class="ti ti-plus"></i> Add Option</button>'
-      + '</div></div>'
+      + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">Payment Options</div></div></div>'
       + '<p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">Manage how customers pay. Enable <strong style="color:var(--text)">revenue</strong> on a method to include it in sales totals.</p>'
+      + '<div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:10px">'
+      + '<button class="btn sm" onclick="_settingsAddPayment()"><i class="ti ti-plus"></i> Add Option</button>'
+      + '</div>'
       + '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden">' + rows + '</div>'
       + '</div>';
   } else if (catId === 'app') {
     detail.innerHTML = '<div class="inbox-detail">'
       + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">App Settings</div></div></div>'
+      + '<p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">Manage your account details, appearance, and notification preferences.</p>'
 
       + '<div class="settings-section"><div class="settings-section-title">Profile</div>'
       + '<div class="field-row">'
@@ -1712,7 +1715,7 @@ function _showSettingsDetail(catId) {
       + '</div></div>'
 
       + '<div style="display:flex;gap:8px;margin-top:8px">'
-      + '<button class="btn primary" id="settingsSaveBtn" onclick="applySettings()"><i class="ti ti-check"></i> Save settings</button>'
+      + '<button class="btn primary" id="settingsSaveBtn" onclick="applySettings()"><i class="ti ti-cloud-upload"></i> Save</button>'
       + '</div>'
       + '</div>';
 
