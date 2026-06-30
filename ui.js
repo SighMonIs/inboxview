@@ -1096,7 +1096,7 @@ function renderInboxList(list) {
 
   const orderIds = [];
   const orderMap = new Map();
-  filtered.forEach(row => {
+  list.forEach(row => {
     const oid = String(row.orderId);
     if (!orderMap.has(oid)) { orderIds.push(oid); orderMap.set(oid, []); }
     orderMap.get(oid).push(row);
