@@ -1603,10 +1603,11 @@ function _showSettingsDetail(catId) {
     }
   } else if (catId === 'colours') {
     detail.innerHTML = '<div class="inbox-detail">'
-      + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">Colour Library</div>'
-      + '<button class="btn sm" style="margin-left:auto" onclick="addColour()"><i class="ti ti-plus"></i> Add colour</button>'
-      + '</div></div>'
+      + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">Colour Library</div></div></div>'
       + '<p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">Manage your available filament colours. Tick <strong style="color:var(--text)">Available</strong> if you currently have that colour in stock.</p>'
+      + '<div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:10px">'
+      + '<button class="btn sm" onclick="addColour()"><i class="ti ti-plus"></i> Add colour</button>'
+      + '</div>'
       + '<div class="colour-mgr-hdr"><span>Swatch</span><span>Name</span><span>Hex code</span><span>Available</span><span></span></div>'
       + '<div id="colourList"></div>'
       + '<div style="display:flex;gap:8px;margin-top:12px">'
