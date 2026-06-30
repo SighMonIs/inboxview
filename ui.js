@@ -1090,16 +1090,9 @@ function _initials(name) {
 }
 
 function renderInboxList(list) {
-  updateSidebarBadges();
   if (_sidebarView !== 'orders') return;
   const el = document.getElementById('inboxList');
   if (!el) return;
-
-  // Apply tab filter
-  let filtered = list;
-  if (_inboxTab === 'pending')  filtered = list.filter(r => (r.status||'Pending') === 'Pending');
-  if (_inboxTab === 'printing') filtered = list.filter(r => r.status === 'Printing');
-  if (_inboxTab === 'complete') filtered = list.filter(r => r.status === 'Complete');
 
   const orderIds = [];
   const orderMap = new Map();
@@ -1335,19 +1328,27 @@ function _setListPane(headerHtml) {
 function _renderViewOrders() {
   var col = document.querySelector('.inbox-list-col');
   var footer = col.querySelector('.inbox-list-footer').outerHTML;
-  var activeTab = _inboxTab || 'all';
   col.innerHTML = '<div class="inbox-list-header">'
     + '<div class="inbox-search-row">'
     + '<i class="ti ti-search inbox-search-icon"></i>'
     + '<input type="text" id="search" placeholder="Search…" oninput="renderTable()">'
     + '</div>'
-    + '<div class="inbox-tabs-pill">'
-    + ['all','pending','printing','complete'].map(function(t) {
-        var label = t.charAt(0).toUpperCase() + t.slice(1);
-        return '<button class="inbox-tab-pill' + (activeTab===t?' active':'') + '" data-tab="' + t + '" onclick="setInboxTab(\'' + t + '\')">' + label + '</button>';
-      }).join('')
-    + '</div>'
     + '<div class="inbox-sort-row">'
+    + '<div class="filter-wrap" id="filterWrap">'
+    + '<button class="sort-btn-main" id="filterBtn" onclick="toggleFilterPanel(event)" style="border-radius:var(--radius);border:1px solid var(--border2);height:34px;padding:0 10px;gap:6px">'
+    + '<i class="ti ti-filter"></i> Filter <span id="filterCount" style="display:none;color:var(--accent);font-weight:700;margin-left:2px"></span>'
+    + '</button>'
+    + '<div class="filter-panel" id="filterPanel" style="display:none">'
+    + '<div class="filter-section-title">Status</div>'
+    + ['Pending','Printing','Complete','On Hold','Cancelled'].map(function(s){
+        return '<label class="filter-check"><input type="checkbox" data-filter="status" value="' + s + '" checked onchange="renderTable();updateFilterCount()"> ' + s + '</label>';
+      }).join('')
+    + '<div class="filter-section-title" style="margin-top:10px">Category</div>'
+    + '<div id="filterCatChecks"></div>'
+    + '<div class="filter-section-title" style="margin-top:10px">Payment</div>'
+    + '<div id="filterPayChecks"></div>'
+    + '</div>'
+    + '</div>'
     + '<div class="sort-btn-wrap" id="sortWrap">'
     + '<div class="sort-btn-group">'
     + '<button class="sort-btn-main" id="sortBtn" onclick="toggleSortPanel(event)"><i class="ti ti-arrows-sort"></i></button>'
@@ -1359,6 +1360,9 @@ function _renderViewOrders() {
     + '</div>'
     + '<div class="inbox-list" id="inboxList"></div>'
     + footer;
+  populateCatFilter();
+  updateFilterCount();
+  updateSortUI();
   renderTable();
 }
 
@@ -1664,15 +1668,5 @@ function _renderViewUsers() {
     + '</div>';
 }
 
-// Update sidebar badge counts after data loads
-function updateSidebarBadges() {
-  var ordBadge = document.getElementById('badge-orders');
-  var custBadge = document.getElementById('badge-customers');
-  var colBadge = document.getElementById('badge-colours');
-  var catBadge = document.getElementById('badge-categories');
-  if (ordBadge) ordBadge.textContent = new Set(orders.map(function(r){return r.orderId;})).size;
-  if (custBadge) custBadge.textContent = customers.length;
-  if (colBadge) colBadge.textContent = colours.filter(function(c){return c.available!==false;}).length;
-  if (catBadge) catBadge.textContent = cats.filter(function(c){return !c.archived;}).length;
-}
+function updateSidebarBadges() {}
 
