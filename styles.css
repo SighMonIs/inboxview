@@ -201,7 +201,7 @@ body{overflow:hidden;background:#0C0B11;margin:0;padding:0;}
   --radius:8px;--radius-lg:12px;
   --tbl-odd:#1a1a1a;--tbl-head:#222222;
 }
-html,body{height:100%;background:var(--bg);}
+html,body{height:100%;background:#0C0B11;}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;color:var(--text);font-size:13px;line-height:1.5;}
 .app{padding:2rem 1.5rem 4rem;max-width:none;}
 
