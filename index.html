@@ -77,37 +77,42 @@ window.CONFIG = window.CONFIG || { SUPABASE_URL: '', SUPABASE_KEY: '' };
       <i class="ti ti-printer"></i>
     </div>
     <div class="topbar-nav">
-      <button class="topbar-item primary-item" onclick="openAddModal()" title="New Order">
-        <i class="ti ti-plus"></i>
+      <!-- Style A: Rounded pill, icon + text horizontal -->
+      <button class="topbar-item primary-item ti-a" onclick="openAddModal()" title="New Order">
+        <i class="ti ti-plus"></i><span class="ti-label">New Order</span>
       </button>
-      <button class="topbar-item active" data-view="orders" onclick="setSidebarView('orders')" title="Orders">
-        <i class="ti ti-inbox"></i>
+      <!-- Style B: Vertical stack, icon above label -->
+      <button class="topbar-item active ti-b" data-view="orders" onclick="setSidebarView('orders')" title="Orders">
+        <i class="ti ti-inbox"></i><span class="ti-label">Orders</span>
       </button>
-      <button class="topbar-item" data-view="customers" onclick="setSidebarView('customers')" title="Customers">
-        <i class="ti ti-address-book"></i>
+      <button class="topbar-item ti-b" data-view="customers" onclick="setSidebarView('customers')" title="Customers">
+        <i class="ti ti-address-book"></i><span class="ti-label">Customers</span>
       </button>
-      <button class="topbar-item" data-view="colours" onclick="setSidebarView('colours')" title="Colours">
-        <i class="ti ti-brush"></i>
+      <!-- Style C: Outline pill -->
+      <button class="topbar-item ti-c" data-view="colours" onclick="setSidebarView('colours')" title="Colours">
+        <i class="ti ti-brush"></i><span class="ti-label">Colours</span>
       </button>
-      <button class="topbar-item" data-view="categories" onclick="setSidebarView('categories')" title="Categories">
-        <i class="ti ti-category"></i>
+      <!-- Style D: Underline tab -->
+      <button class="topbar-item ti-d" data-view="categories" onclick="setSidebarView('categories')" title="Categories">
+        <i class="ti ti-category"></i><span class="ti-label">Categories</span>
       </button>
-      <button class="topbar-item" data-view="stats" onclick="setSidebarView('stats')" title="Stats">
-        <i class="ti ti-chart-bar"></i>
+      <!-- Style E: Text + dim icon reversed -->
+      <button class="topbar-item ti-e" data-view="stats" onclick="setSidebarView('stats')" title="Stats">
+        <i class="ti ti-chart-bar"></i><span class="ti-label">Stats</span>
       </button>
-      <button class="topbar-item" onclick="window.location.href='/badge/'" title="Badges">
-        <i class="ti ti-badge"></i>
+      <button class="topbar-item ti-e" onclick="window.location.href='/badge/'" title="Badges">
+        <i class="ti ti-badge"></i><span class="ti-label">Badges</span>
       </button>
     </div>
     <div class="topbar-end">
-      <button class="topbar-item" data-view="settings" onclick="setSidebarView('settings')" title="Settings">
-        <i class="ti ti-settings"></i>
+      <button class="topbar-item ti-b" data-view="settings" onclick="setSidebarView('settings')" title="Settings">
+        <i class="ti ti-settings"></i><span class="ti-label">Settings</span>
       </button>
-      <button class="topbar-item" data-view="users" onclick="setSidebarView('users')" title="Users">
-        <i class="ti ti-users"></i>
+      <button class="topbar-item ti-b" data-view="users" onclick="setSidebarView('users')" title="Users">
+        <i class="ti ti-users"></i><span class="ti-label">Users</span>
       </button>
-      <button class="topbar-item topbar-logout" onclick="doLogout()" title="Sign out">
-        <i class="ti ti-logout"></i>
+      <button class="topbar-item topbar-logout ti-b" onclick="doLogout()" title="Sign out">
+        <i class="ti ti-logout"></i><span class="ti-label">Sign out</span>
       </button>
     </div>
   </nav>
@@ -156,7 +161,7 @@ window.CONFIG = window.CONFIG || { SUPABASE_URL: '', SUPABASE_KEY: '' };
       <div class="inbox-empty-state"><i class="ti ti-loader-2"></i> Loading&hellip;</div>
     </div>
     <div class="inbox-list-footer">
-      <span id="footerVersion">v1.1.3</span>
+      <span id="footerVersion">v1.1.4</span>
       <span style="color:var(--border2)">&middot;</span>
       <span id="statusMsg" class="footer-status">Loading&hellip;</span>
     </div>
