@@ -1561,7 +1561,7 @@ var _SETTINGS_CATS = [
 ];
 
 function _renderViewSettings() {
-  _setListPane('<div class="inbox-view-header"><span class="inbox-view-title">Settings</span></div>');
+  _setListPane('<div class="inbox-view-header"><span class="inbox-detail-customer">Settings</span></div>');
   var list = document.getElementById('inboxList');
   list.innerHTML = _SETTINGS_CATS.map(function(cat) {
     var sel = cat.id === _selectedSettingsCat;
