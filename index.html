@@ -77,9 +77,6 @@ window.CONFIG = window.CONFIG || { SUPABASE_URL: '', SUPABASE_KEY: '' };
       <i class="ti ti-printer"></i>
     </div>
     <div class="topbar-nav">
-      <button class="topbar-item primary-item ti-e" onclick="openAddModal()" title="New Order">
-        <i class="ti ti-plus"></i><span class="ti-label">New Order</span>
-      </button>
       <button class="topbar-item active ti-e" data-view="orders" onclick="setSidebarView('orders')" title="Orders">
         <i class="ti ti-inbox"></i><span class="ti-label">Orders</span>
       </button>
@@ -121,6 +118,9 @@ window.CONFIG = window.CONFIG || { SUPABASE_URL: '', SUPABASE_KEY: '' };
         <i class="ti ti-search inbox-search-icon"></i>
         <input type="text" id="search" placeholder="Search&hellip;" oninput="renderTable();toggleSearchClear()">
         <button id="searchClear" onclick="document.getElementById('search').value='';renderTable();toggleSearchClear()" style="display:none;background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0 2px;line-height:1;flex-shrink:0"><i class="ti ti-x"></i></button>
+        <button class="topbar-item primary-item ti-e" onclick="openAddModal()" title="New Order" style="flex-shrink:0;margin-left:4px">
+          <i class="ti ti-plus"></i><span class="ti-label">New Order</span>
+        </button>
       </div>
       <div class="inbox-sort-row">
         <div class="filter-wrap" id="filterWrap">
@@ -157,7 +157,7 @@ window.CONFIG = window.CONFIG || { SUPABASE_URL: '', SUPABASE_KEY: '' };
       <div class="inbox-empty-state"><i class="ti ti-loader-2"></i> Loading&hellip;</div>
     </div>
     <div class="inbox-list-footer">
-      <span id="footerVersion">v1.4.0</span>
+      <span id="footerVersion">v1.4.1</span>
       <span style="color:var(--border2)">&middot;</span>
       <span id="statusMsg" class="footer-status">Loading&hellip;</span>
     </div>
