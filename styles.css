@@ -642,9 +642,7 @@ thead th.sortable{user-select:none;}
 /* ── Topbar layout ── */
 .topbar{
   height:54px;flex-shrink:0;
-  background:#2B2B2B;
   border-radius:10px;
-  border:1px solid rgba(255,255,255,0.1);
   display:flex;align-items:center;flex-wrap:nowrap;
   gap:2px;padding:0 8px;
   z-index:100;
