@@ -1603,11 +1603,12 @@ function _showSettingsDetail(catId) {
     }
   } else if (catId === 'colours') {
     detail.innerHTML = '<div class="inbox-detail">'
-      + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">Colour Library</div></div></div>'
+      + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">Colour Library</div>'
+      + '<button class="btn sm" style="margin-left:auto" onclick="addColour()"><i class="ti ti-plus"></i> Add colour</button>'
+      + '</div></div>'
       + '<p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">Manage your available filament colours. Tick <strong style="color:var(--text)">Available</strong> if you currently have that colour in stock.</p>'
       + '<div class="colour-mgr-hdr"><span>Swatch</span><span>Name</span><span>Hex code</span><span>Available</span><span></span></div>'
       + '<div id="colourList"></div>'
-      + '<button class="btn" style="width:100%;margin-top:8px" onclick="addColour()"><i class="ti ti-plus"></i> Add colour</button>'
       + '<div style="display:flex;gap:8px;margin-top:12px">'
       + '<button class="btn primary" onclick="saveColours()"><i class="ti ti-cloud-upload"></i> Save</button>'
       + '</div></div>';
@@ -1644,11 +1645,11 @@ function _showSettingsDetail(catId) {
         + '</div>';
     }).join('');
     detail.innerHTML = '<div class="inbox-detail">'
-      + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">Payment Options</div></div></div>'
+      + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">Payment Options</div>'
+      + '<button class="btn sm" style="margin-left:auto" onclick="_settingsAddPayment()"><i class="ti ti-plus"></i> Add Option</button>'
+      + '</div></div>'
       + '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden">' + rows + '</div>'
-      + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
-      + '<button class="btn sm" onclick="_settingsAddPayment()"><i class="ti ti-plus"></i> Add Option</button>'
-      + '</div></div>';
+      + '</div>';
   } else if (catId === 'app') {
     detail.innerHTML = '<div class="inbox-detail">'
       + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">App Settings</div></div></div>'
