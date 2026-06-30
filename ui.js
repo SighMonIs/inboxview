@@ -986,7 +986,7 @@ function toggleFilterPanel(e){
   if(sortPanel) sortPanel.style.display = 'none';
   const rect = btn.getBoundingClientRect();
   panel.style.top  = (rect.bottom + 6) + 'px';
-  panel.style.left = Math.max(8, rect.right - 220) + 'px';
+  panel.style.left = rect.left + 'px';
   panel.style.display = '';
 }
 
