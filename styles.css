@@ -127,7 +127,7 @@ body{overflow:hidden;background:var(--base);margin:0;padding:0;}
 
 /* Col 3 — detail panel */
 .inbox-detail-col{flex:1;min-width:0;overflow-y:auto;scrollbar-gutter:stable;background:transparent;display:flex;flex-direction:column;}
-.inbox-detail{padding:1.5rem;display:flex;flex-direction:column;gap:1rem;}
+.inbox-detail{padding:1.5rem;padding-right:calc(1.5rem + 15px);display:flex;flex-direction:column;gap:1rem;}
 .inbox-no-selection{
   flex:1;display:flex;flex-direction:column;
   align-items:center;justify-content:center;
