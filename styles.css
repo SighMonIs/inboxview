@@ -384,9 +384,9 @@ tbody tr.note-inline-row + tr td{border-top:1px solid var(--border);}
 .stepper input[type=number]{-moz-appearance:textfield;}
 
 /* ── Custom checkboxes ── */
-input[type=checkbox]{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:3px;background:var(--surface2);border:none;cursor:pointer;flex-shrink:0;position:relative;transition:background 0.12s;}
-input[type=checkbox]:checked{background:var(--accent);}
-input[type=checkbox]:checked::after{content:'';position:absolute;left:4px;top:1px;width:4px;height:8px;border:2px solid var(--bg);border-top:none;border-left:none;transform:rotate(45deg);}
+input[type=checkbox]{-webkit-appearance:none;appearance:none;width:15px;height:15px;border-radius:3px;background:var(--bg);border:1px solid var(--border2);cursor:pointer;flex-shrink:0;position:relative;transition:background 0.12s,border-color 0.12s;}
+input[type=checkbox]:checked{background:var(--accent);border-color:var(--accent);}
+input[type=checkbox]:checked::after{content:'';position:absolute;left:4px;top:1px;width:5px;height:10px;border:2.5px solid var(--bg);border-top:none;border-left:none;transform:rotate(45deg);}
 input[type=checkbox]:focus-visible{outline:2px solid var(--accent2);outline-offset:2px;}
 
 /* ── Number steppers ── */
