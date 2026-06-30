@@ -1601,7 +1601,6 @@ function _showSettingsDetail(catId) {
       + '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden">' + rows + '</div>'
       + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
       + '<button class="btn sm" onclick="_settingsAddPayment()"><i class="ti ti-plus"></i> Add Option</button>'
-      + '<button class="btn sm" onclick="openSettings()"><i class="ti ti-external-link"></i> Full Settings</button>'
       + '</div></div>';
   } else if (catId === 'cats') {
     var catRows = cats.filter(function(c){return !c.archived;}).map(function(c) {
@@ -1638,8 +1637,74 @@ function _showSettingsDetail(catId) {
   } else if (catId === 'app') {
     detail.innerHTML = '<div class="inbox-detail">'
       + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">App Settings</div></div></div>'
-      + '<button class="btn sm" onclick="openSettings()"><i class="ti ti-external-link"></i> Open App Settings</button>'
+
+      + '<div class="settings-section"><div class="settings-section-title">Profile</div>'
+      + '<div class="field-row">'
+      + '<div class="field"><label>Display name</label><input type="text" id="settingsName" placeholder="Your name"></div>'
+      + '<div class="field"><label>Email</label><input type="email" id="settingsEmail" placeholder="you@example.com"></div>'
+      + '</div></div>'
+
+      + '<div class="settings-section"><div class="settings-section-title">Change password</div>'
+      + '<div class="field-row">'
+      + '<div class="field"><label>New password</label><input type="password" id="settingsPassword" placeholder="Leave blank to keep current"></div>'
+      + '<div class="field"><label>Confirm password</label><input type="password" id="settingsPasswordConfirm" placeholder="Repeat new password"></div>'
+      + '</div>'
+      + '<div id="settingsPasswordError" style="font-size:11px;color:var(--red);margin-top:4px;display:none"></div>'
+      + '</div>'
+
+      + '<div class="settings-section"><div class="settings-section-title">Accent colour</div>'
+      + '<div class="field"><label>Choose from your filament colours</label>'
+      + '<div class="colour-picker-wrap" id="accentPickerWrap">'
+      + '<div class="colour-picker-btn" onclick="toggleColourPicker(\'accent-sel\')" id="cpb-accent-sel">'
+      + '<div class="cp-swatch" id="accent-sel-swatch" style="background:var(--accent)"></div>'
+      + '<span class="cp-label" id="accent-sel-label">Loading…</span>'
+      + '<i class="ti ti-chevron-down cp-arrow"></i>'
+      + '</div>'
+      + '<div class="colour-picker-list" id="cpl-accent-sel" style="display:none">'
+      + '<div class="cp-none" onclick="selectAccentColour(\'\',\'\',this)">— none / custom —</div>'
+      + '</div></div></div>'
+      + '<input type="color" id="customColour" style="display:none" oninput="previewAccent(this.value)">'
+      + '</div>'
+
+      + '<div class="settings-section"><div class="settings-section-title">Notifications</div>'
+      + '<p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">Email alerts for new orders. Requires a free <strong style="color:var(--text)">Resend</strong> account.</p>'
+      + '<div class="field" style="margin-bottom:12px"><label>Notification email</label><input type="email" id="settingsNotifyEmail" placeholder="you@example.com"></div>'
+      + '<div style="display:flex;flex-direction:column;gap:8px">'
+      + '<div style="background:var(--surface2);border-radius:var(--radius-lg);padding:10px 14px">'
+      + '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:4px">'
+      + '<input type="checkbox" id="settingsNotifyDaily" style="accent-color:var(--accent);width:14px;height:14px">'
+      + '<span style="font-size:12px;font-weight:500">Daily badge digest — 4PM Melbourne</span>'
+      + '</label>'
+      + '<div style="font-size:11px;color:var(--muted);padding-left:22px">Sends a summary email if any badge orders were added that day.</div>'
+      + '</div>'
+      + '<div style="background:var(--surface2);border-radius:var(--radius-lg);padding:10px 14px">'
+      + '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:4px;flex-wrap:wrap">'
+      + '<input type="checkbox" id="settingsNotifyThreshold" style="accent-color:var(--accent);width:14px;height:14px">'
+      + '<span style="font-size:12px;font-weight:500">Urgent alert when</span>'
+      + '<input type="number" id="settingsNotifyCount" value="5" min="1" max="99" style="width:48px;height:26px;padding:0 6px;font-size:12px;border-radius:var(--radius);border:none;background:var(--bg);color:var(--text);text-align:center">'
+      + '<span style="font-size:12px;font-weight:500">or more items added</span>'
+      + '</label>'
+      + '<div style="font-size:11px;color:var(--muted);padding-left:22px">Checks every 15 minutes.</div>'
+      + '</div></div></div>'
+
+      + '<div style="display:flex;gap:8px;margin-top:8px">'
+      + '<button class="btn primary" id="settingsSaveBtn" onclick="applySettings()"><i class="ti ti-check"></i> Save settings</button>'
+      + '</div>'
       + '</div>';
+
+    if(typeof openSettings === 'function') {
+      if(window.currentUser){
+        document.getElementById('settingsEmail').value = window.currentUser.email||'';
+        document.getElementById('settingsName').value = (window.currentUser.user_metadata||{}).display_name||'';
+      }
+      document.getElementById('settingsPassword').value = '';
+      document.getElementById('settingsPasswordConfirm').value = '';
+      document.getElementById('settingsPasswordError').style.display = 'none';
+      if(typeof buildAccentSwatches==='function') buildAccentSwatches();
+      var s = localStorage.getItem('pd_accent');
+      if(s){try{document.getElementById('customColour').value=JSON.parse(s).a;}catch(e){}}
+      if(typeof loadNotificationSettings==='function') loadNotificationSettings();
+    }
   }
 }
 
