@@ -118,16 +118,12 @@ window.CONFIG = window.CONFIG || { SUPABASE_URL: '', SUPABASE_KEY: '' };
 
 <div class="inbox-layout" id="mainContent">
 
-  <!-- Hidden table for renderTable() compatibility -->
-  <table style="display:none"><tbody id="tbody"></tbody></table>
-
   <!-- ── Column 2: Order list ── -->
   <div class="inbox-list-col">
     <div class="inbox-list-header">
       <div class="inbox-search-row">
         <i class="ti ti-search inbox-search-icon"></i>
         <input type="text" id="search" placeholder="Search&hellip;" oninput="renderTable()">
-        <input type="text" id="search-mobile" style="display:none" oninput="document.getElementById('search').value=this.value;renderTable()">
       </div>
       <div class="inbox-tabs-pill" style="margin-bottom:0">
         <button class="inbox-tab-pill active" data-tab="all"      onclick="setInboxTab('all')">All</button>
