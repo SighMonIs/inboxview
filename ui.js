@@ -1231,7 +1231,9 @@ function _showInboxDetailFromData(orderId, rows) {
       ? '<button class="icon-btn" title="Generate Badge" onclick="generateBadge(\'/badge/?' + badgeParams + '\')"><i class="ti ti-badge"></i></button>'
       : '';
 
-    return '<div class="inbox-item-card">'
+    const searchText = [cat ? cat.name : '', Object.values(parsedOpts).join(' '), row.notes || ''].join(' ').toLowerCase();
+
+    return '<div class="inbox-item-card" data-search="' + esc(searchText) + '">'
       + '<div class="inbox-item-left">'
       + '<div class="inbox-item-qty">' + row.qty + '</div>'
       + '<div class="inbox-item-qty-label">qty</div>'
@@ -1286,8 +1288,13 @@ function _showInboxDetailFromData(orderId, rows) {
 
     + '<div>'
     + '<div class="inbox-detail-items-hdr">'
-    + '<div class="inbox-detail-items-label">Items (' + rows.length + ')</div>'
+    + '<div class="inbox-detail-items-label" id="detailItemsLabel">Items (' + rows.length + ')</div>'
     + bulkBadgeBtn
+    + '</div>'
+    + '<div class="inbox-search-row" style="margin-bottom:8px">'
+    + '<i class="ti ti-search inbox-search-icon"></i>'
+    + '<input type="text" id="detailItemsSearch" placeholder="Filter items…" oninput="_filterDetailItems(this.value,' + rows.length + ')">'
+    + '<button id="detailItemsClear" onclick="document.getElementById(\'detailItemsSearch\').value=\'\';_filterDetailItems(\'\','+ rows.length +');" style="display:none;background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0 2px;flex-shrink:0"><i class="ti ti-x"></i></button>'
     + '</div>'
     + '<div class="inbox-items-list">' + itemsHtml + '</div>'
     + '</div>'
@@ -1762,6 +1769,21 @@ function _renderViewUsers() {
     + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">Users</div></div></div>'
     + '<div><button class="btn sm" onclick="openUsersModal()"><i class="ti ti-users"></i> Manage Users</button></div>'
     + '</div>';
+}
+
+function _filterDetailItems(q, total) {
+  var v = (q || '').toLowerCase().trim();
+  var cards = document.querySelectorAll('.inbox-items-list .inbox-item-card');
+  var shown = 0;
+  cards.forEach(function(card) {
+    var match = !v || (card.dataset.search || '').includes(v);
+    card.style.display = match ? '' : 'none';
+    if (match) shown++;
+  });
+  var lbl = document.getElementById('detailItemsLabel');
+  if (lbl) lbl.textContent = v ? 'Items (' + shown + ' / ' + total + ')' : 'Items (' + total + ')';
+  var clr = document.getElementById('detailItemsClear');
+  if (clr) clr.style.display = v ? 'block' : 'none';
 }
 
 function updateSidebarBadges() {}
