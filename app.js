@@ -1303,6 +1303,7 @@ function loadAccent(){
 function applyAccent(a,a2,save=true){
   document.documentElement.style.setProperty('--accent',a);
   document.documentElement.style.setProperty('--accent2',a2);
+  document.documentElement.style.setProperty('--base',mixHex(a,'#1a1830',0.12));
   if(save){
     localStorage.setItem('pd_accent',JSON.stringify({a,a2}));
     savePreferences();
@@ -1313,6 +1314,13 @@ function previewAccent(hex){
   applyAccent(hex,a2);
   // Deselect all swatches
   document.querySelectorAll('.accent-swatch-circle').forEach(s=>s.classList.remove('active'));
+}
+// ponytail: base tint is a flat 12% blend, not perceptual — fine at this saturation range, revisit if a very light/neon filament colour washes it out
+function mixHex(hex1,hex2,amt){
+  const r1=parseInt(hex1.slice(1,3),16),g1=parseInt(hex1.slice(3,5),16),b1=parseInt(hex1.slice(5,7),16);
+  const r2=parseInt(hex2.slice(1,3),16),g2=parseInt(hex2.slice(3,5),16),b2=parseInt(hex2.slice(5,7),16);
+  const r=Math.round(r1*amt+r2*(1-amt)),g=Math.round(g1*amt+g2*(1-amt)),b=Math.round(b1*amt+b2*(1-amt));
+  return'#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
 }
 function darken(hex,amt){
   let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);

@@ -1081,7 +1081,8 @@ function setInboxTab(tab) {
 }
 
 function _avatarColor(name) {
-  const palette = ['#5b9cf6','#5cb87a','#e8a93a','#e07c3a','#9b8af6','#e05c5c','#3ab8b8','#c47ab8'];
+  const stock = (typeof colours!=='undefined' ? colours : []).filter(c=>c.available).map(c=>c.code);
+  const palette = stock.length ? stock : ['#5b9cf6','#5cb87a','#e8a93a','#e07c3a','#9b8af6','#e05c5c','#3ab8b8','#c47ab8'];
   let h = 0;
   for (let i = 0; i < (name||'').length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
   return palette[Math.abs(h) % palette.length];
@@ -1131,6 +1132,7 @@ function renderInboxList(list) {
     const statusText = {Pending:'var(--amber)',Printing:'var(--blue)',Complete:'var(--green)','On Hold':'var(--orange)',Cancelled:'var(--red)'}[status]||'var(--muted)';
 
     return '<div class="inbox-card ' + blClass + (isSelected ? ' selected' : '') + '" onclick="showInboxDetail(\'' + esc(oid) + '\')">'
+      + '<div class="inbox-card-avatar" style="background:' + avatarColor + '">' + esc(initials) + '</div>'
       + '<div class="inbox-card-content">'
       + '<div class="inbox-card-row1">'
       + '<span class="inbox-card-customer">' + (esc(first.customer) || '?') + '</span>'
@@ -1152,11 +1154,19 @@ function renderInboxList(list) {
   }
 }
 
+function _inboxEmptyStateHtml() {
+  const pending = orders.filter(o => (o.status||'Pending') === 'Pending').length;
+  const msg = pending ? pending + (pending===1?' order':' orders') + ' waiting — pick one to get started' : 'All caught up — nothing pending';
+  return '<div class="inbox-no-selection"><i class="ti ti-inbox"></i><p>'+msg+'</p></div>';
+}
+
 function _inboxClearDetailIfGone(orderIds) {
   if (_inboxSelectedOrderId && !orderIds.includes(String(_inboxSelectedOrderId))) {
     _inboxSelectedOrderId = null;
+  }
+  if (!_inboxSelectedOrderId) {
     const d = document.getElementById('inboxDetail');
-    if (d) d.innerHTML = '<div class="inbox-no-selection"><i class="ti ti-inbox"></i><p>Select an order</p></div>';
+    if (d) d.innerHTML = _inboxEmptyStateHtml();
   }
 }
 
