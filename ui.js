@@ -1291,16 +1291,13 @@ function _showInboxDetailFromData(orderId, rows) {
     + '<div class="inbox-detail-header">'
     + '<div class="inbox-detail-header-top">'
     + '<div class="inbox-detail-customer">' + (esc(first.customer) || '?') + '</div>'
-    + '<div class="inbox-detail-num">' + orderNum + '</div>'
-    + '</div>'
-    + '<div class="inbox-detail-header-bot">'
-    + '<div style="flex:1"></div>'
     + '<button class="btn sm" onclick="openEdit(\'' + esc(String(orderId)) + '\')"><i class="ti ti-edit"></i> Edit</button>'
     + '<button class="btn sm icon-only" onclick="deleteOrder(\'' + esc(String(orderId)) + '\')" title="Delete order" style="border-color:rgba(224,92,92,0.3);color:var(--red)"><i class="ti ti-trash"></i></button>'
     + '</div>'
     + '</div>'
 
     + '<div class="inbox-detail-meta">'
+    + '<div class="inbox-detail-meta-item"><i class="ti ti-hash"></i><strong>' + orderNum + '</strong></div>'
     + '<div class="inbox-detail-meta-item">' + deliveryIcon + '<strong>' + esc(first.delivery || 'Post') + '</strong></div>'
     + (first.payment ? '<div class="inbox-detail-meta-item"><i class="ti ti-credit-card"></i><strong>' + esc(first.payment) + '</strong></div>' : '')
     + (first.address ? '<div class="inbox-detail-meta-item"><i class="ti ti-map-pin"></i><strong>' + esc(first.address) + '</strong>' + printBtn + '</div>' : '')
