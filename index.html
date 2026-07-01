@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBETfOa0gAqNtoTnQ5BodrAi6bk2HCD_8c&libraries=places&loading=async" async defer></script>
 <script src="config.js" onerror="console.warn('config.js not found — using defaults')"></script>
-<link rel="stylesheet" href="styles.css?v=1.1.5">
+<link rel="stylesheet" href="styles.css?v=1.1.6">
 
 <script>
 // Fallback if config.js missing
@@ -125,7 +125,7 @@ window.CONFIG = window.CONFIG || { SUPABASE_URL: '', SUPABASE_KEY: '' };
       </div>
       <div class="inbox-sort-row">
         <div class="filter-wrap" id="filterWrap">
-          <button class="sort-btn-main" id="filterBtn" onclick="toggleFilterPanel(event)" style="border-radius:var(--radius);border:none;height:34px;padding:0 10px;gap:6px">
+          <button class="sort-btn-main" id="filterBtn" onclick="toggleFilterPanel(event)">
             <i class="ti ti-filter"></i> Filter <span id="filterCount" style="display:none;color:var(--accent);font-weight:700;margin-left:2px"></span>
           </button>
           <div class="filter-panel" id="filterPanel" style="display:none">
@@ -158,7 +158,7 @@ window.CONFIG = window.CONFIG || { SUPABASE_URL: '', SUPABASE_KEY: '' };
       <div class="inbox-empty-state"><i class="ti ti-loader-2"></i> Loading&hellip;</div>
     </div>
     <div class="inbox-list-footer">
-      <span id="footerVersion">v1.4.21</span>
+      <span id="footerVersion">v1.4.22</span>
       <span style="color:var(--border2)">&middot;</span>
       <span id="statusMsg" class="footer-status">Loading&hellip;</span>
     </div>
@@ -532,7 +532,7 @@ window.CONFIG = window.CONFIG || { SUPABASE_URL: '', SUPABASE_KEY: '' };
 </div>
 
 <script src="api.js?v=1.1.0"></script>
-<script src="ui.js?v=1.1.2"></script>
+<script src="ui.js?v=1.1.3"></script>
 <script src="app.js?v=1.1.2"></script>
 </body>
 </html>

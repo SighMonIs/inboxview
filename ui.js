@@ -1331,7 +1331,7 @@ function _showInboxDetailFromData(orderId, rows) {
     + '</div>'
     + '<div style="flex:1"></div>'
     + (catFilterOpts ? '<div class="filter-wrap" id="detailFilterWrap">'
-    + '<button class="sort-btn-main" onclick="toggleDetailFilterPanel(event)" style="border:none;height:100%;padding:0 10px;gap:6px;border-radius:var(--radius)"><i class="ti ti-filter"></i> Filter<span id="detailFilterCount" style="display:none;color:var(--accent);font-weight:700;margin-left:2px"></span></button>'
+    + '<button class="sort-btn-main" onclick="toggleDetailFilterPanel(event)" style="height:100%"><i class="ti ti-filter"></i> Filter<span id="detailFilterCount" style="display:none;color:var(--accent);font-weight:700;margin-left:2px"></span></button>'
     + '<div class="filter-panel" id="detailFilterPanel" style="display:none" onclick="event.stopPropagation()">' + catFilterOpts + '</div>'
     + '</div>' : '')
     + '<div class="sort-btn-wrap" id="detailSortWrap">'
