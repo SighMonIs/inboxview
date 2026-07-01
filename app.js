@@ -1544,6 +1544,8 @@ document.addEventListener('click', e=>{
   if(!e.target.closest('.colour-picker-wrap')&&!e.target.closest('.colour-combo-option')){
     document.querySelectorAll('.colour-picker-list').forEach(el=>el.style.display='none');
   }
+  if(!e.target.closest('#detailFilterWrap')){const p=document.getElementById('detailFilterPanel');if(p)p.style.display='none';}
+  if(!e.target.closest('#detailSortWrap')){const p=document.getElementById('detailSortPanel');if(p)p.style.display='none';}
 });
 
 // ── Boot ───────────────────────────────────────────────────

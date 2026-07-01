@@ -1195,7 +1195,22 @@ function _showInboxDetailFromData(orderId, rows) {
 
   const deliveryIcon = first.delivery === 'Pick Up' ? '<i class="ti ti-hand-stop"></i>' : '<i class="ti ti-mail"></i>';
 
-  const itemsHtml = rows.map(row => {
+  // Compute unique categories in this order for the filter panel
+  const _detailCatNames = [...new Set(rows.map(r => { const c = cats.find(x => String(x.id) === String(r.catId)); return c ? c.name : '?'; }))].sort();
+  window._itemSearch = '';
+  window._itemSort = 'default';
+  window._itemSortDir = 1;
+
+  const catFilterOpts = _detailCatNames.length > 1
+    ? _detailCatNames.map(name => '<label class="filter-check"><input type="checkbox" data-detail-cat="' + esc(name) + '" checked onchange="_applyDetailFilters()"> ' + esc(name) + '</label>').join('')
+    : '';
+
+  const sortPanelOpts = [
+    {f:'default', l:'Default order'}, {f:'cat', l:'Category'},
+    {f:'textval', l:'Name / Text'}, {f:'price', l:'Price'}, {f:'qty', l:'Qty'}
+  ].map(s => '<div class="sort-opt' + (s.f === 'default' ? ' active' : '') + '" data-detail-sort="' + s.f + '" onclick="_setDetailSort(\'' + s.f + '\')">' + s.l + '</div>').join('');
+
+  const itemsHtml = rows.map((row, _idx) => {
     const cat = cats.find(c => String(c.id) === String(row.catId));
     const parsedOpts = {};
     if (row.options) row.options.split('||').forEach(p => {
@@ -1233,7 +1248,13 @@ function _showInboxDetailFromData(orderId, rows) {
 
     const searchText = [cat ? cat.name : '', Object.values(parsedOpts).join(' '), row.notes || ''].join(' ').toLowerCase();
 
-    return '<div class="inbox-item-card" data-search="' + esc(searchText) + '">'
+    return '<div class="inbox-item-card"'
+      + ' data-search="' + esc(searchText) + '"'
+      + ' data-catname="' + esc(cat ? cat.name : '') + '"'
+      + ' data-price="' + row.total + '"'
+      + ' data-qty="' + row.qty + '"'
+      + ' data-textval="' + esc(parsedOpts['Text'] || '') + '"'
+      + ' data-idx="' + _idx + '">'
       + '<div class="inbox-item-left">'
       + '<div class="inbox-item-qty">' + row.qty + '</div>'
       + '<div class="inbox-item-qty-label">qty</div>'
@@ -1291,10 +1312,23 @@ function _showInboxDetailFromData(orderId, rows) {
     + '<div class="inbox-detail-items-label" id="detailItemsLabel">Items (' + rows.length + ')</div>'
     + bulkBadgeBtn
     + '</div>'
-    + '<div class="inbox-search-row" style="margin-bottom:8px">'
+    + '<div style="display:flex;gap:6px;margin-bottom:8px;align-items:stretch">'
+    + '<div class="inbox-search-row" style="flex:1;margin-bottom:0">'
     + '<i class="ti ti-search inbox-search-icon"></i>'
-    + '<input type="text" id="detailItemsSearch" placeholder="Filter items…" oninput="_filterDetailItems(this.value,' + rows.length + ')">'
-    + '<button id="detailItemsClear" onclick="document.getElementById(\'detailItemsSearch\').value=\'\';_filterDetailItems(\'\','+ rows.length +');" style="display:none;background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0 2px;flex-shrink:0"><i class="ti ti-x"></i></button>'
+    + '<input type="text" id="detailItemsSearch" placeholder="Filter items…" oninput="window._itemSearch=this.value;_applyDetailFilters()">'
+    + '<button id="detailItemsClear" onclick="document.getElementById(\'detailItemsSearch\').value=\'\';window._itemSearch=\'\';_applyDetailFilters()" style="display:none;background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0 2px;flex-shrink:0"><i class="ti ti-x"></i></button>'
+    + '</div>'
+    + (catFilterOpts ? '<div class="filter-wrap" id="detailFilterWrap">'
+    + '<button class="sort-btn-main" onclick="toggleDetailFilterPanel(event)" style="border:none;height:100%;padding:0 10px;gap:4px;border-radius:var(--radius)"><i class="ti ti-filter"></i><span id="detailFilterCount" style="display:none;color:var(--accent);font-weight:700;margin-left:2px"></span></button>'
+    + '<div class="filter-panel" id="detailFilterPanel" style="display:none;right:0;left:auto" onclick="event.stopPropagation()">' + catFilterOpts + '</div>'
+    + '</div>' : '')
+    + '<div class="sort-btn-wrap" id="detailSortWrap">'
+    + '<div class="sort-btn-group">'
+    + '<button class="sort-btn-main" onclick="toggleDetailSortPanel(event)"><i class="ti ti-arrows-sort"></i></button>'
+    + '<button class="sort-btn-dir" id="detailSortDirBtn" onclick="window._itemSortDir*=-1;_applyDetailFilters()" title="Toggle sort direction"><i class="ti ti-arrow-up" id="detailSortDirIcon"></i></button>'
+    + '</div>'
+    + '<div class="sort-panel" id="detailSortPanel" style="display:none;right:0;left:auto" onclick="event.stopPropagation()">' + sortPanelOpts + '</div>'
+    + '</div>'
     + '</div>'
     + '<div class="inbox-items-list">' + itemsHtml + '</div>'
     + '</div>'
@@ -1771,19 +1805,65 @@ function _renderViewUsers() {
     + '</div>';
 }
 
-function _filterDetailItems(q, total) {
-  var v = (q || '').toLowerCase().trim();
-  var cards = document.querySelectorAll('.inbox-items-list .inbox-item-card');
+function _applyDetailFilters() {
+  var q = (window._itemSearch || '').toLowerCase().trim();
+  var sort = window._itemSort || 'default';
+  var dir = window._itemSortDir || 1;
+  var catCheckboxes = document.querySelectorAll('[data-detail-cat]');
+  var unchecked = new Set(Array.from(catCheckboxes).filter(function(c){return !c.checked;}).map(function(c){return c.dataset.detailCat;}));
+  var list = document.querySelector('.inbox-items-list');
+  if (!list) return;
+  var cards = Array.from(list.querySelectorAll('.inbox-item-card'));
+  var total = cards.length;
   var shown = 0;
   cards.forEach(function(card) {
-    var match = !v || (card.dataset.search || '').includes(v);
-    card.style.display = match ? '' : 'none';
-    if (match) shown++;
+    var vis = (!q || (card.dataset.search||'').includes(q)) && (!unchecked.size || !unchecked.has(card.dataset.catname));
+    card.style.display = vis ? '' : 'none';
+    if (vis) shown++;
   });
+  var sorted = sort === 'default'
+    ? cards.slice().sort(function(a,b){return parseInt(a.dataset.idx||0)-parseInt(b.dataset.idx||0);})
+    : cards.filter(function(c){return c.style.display!=='none';}).sort(function(a,b){
+        if(sort==='textval') return (a.dataset.textval||'').localeCompare(b.dataset.textval||'')*dir;
+        if(sort==='cat') return (a.dataset.catname||'').localeCompare(b.dataset.catname||'')*dir;
+        if(sort==='price') return (parseFloat(a.dataset.price||0)-parseFloat(b.dataset.price||0))*dir;
+        if(sort==='qty') return (parseInt(a.dataset.qty||0)-parseInt(b.dataset.qty||0))*dir;
+        return 0;
+      });
+  sorted.forEach(function(c){list.appendChild(c);});
+  var isFiltered = q || unchecked.size;
   var lbl = document.getElementById('detailItemsLabel');
-  if (lbl) lbl.textContent = v ? 'Items (' + shown + ' / ' + total + ')' : 'Items (' + total + ')';
+  if (lbl) lbl.textContent = isFiltered ? 'Items (' + shown + ' / ' + total + ')' : 'Items (' + total + ')';
   var clr = document.getElementById('detailItemsClear');
-  if (clr) clr.style.display = v ? 'block' : 'none';
+  if (clr) clr.style.display = q ? 'block' : 'none';
+  var fc = document.getElementById('detailFilterCount');
+  if (fc) { fc.style.display = unchecked.size ? 'inline' : 'none'; if (unchecked.size) fc.textContent = unchecked.size; }
+  var icon = document.getElementById('detailSortDirIcon');
+  if (icon) icon.className = dir > 0 ? 'ti ti-arrow-up' : 'ti ti-arrow-down';
+}
+
+function toggleDetailFilterPanel(e) {
+  e.stopPropagation();
+  var p = document.getElementById('detailFilterPanel');
+  var sp = document.getElementById('detailSortPanel');
+  if (sp) sp.style.display = 'none';
+  if (p) p.style.display = p.style.display === 'none' ? '' : 'none';
+}
+
+function toggleDetailSortPanel(e) {
+  e.stopPropagation();
+  var p = document.getElementById('detailSortPanel');
+  var fp = document.getElementById('detailFilterPanel');
+  if (fp) fp.style.display = 'none';
+  if (p) p.style.display = p.style.display === 'none' ? '' : 'none';
+}
+
+function _setDetailSort(field) {
+  window._itemSort = field;
+  document.querySelectorAll('[data-detail-sort]').forEach(function(el){el.classList.toggle('active', el.dataset.detailSort === field);});
+  var sp = document.getElementById('detailSortPanel');
+  if (sp) sp.style.display = 'none';
+  _applyDetailFilters();
 }
 
 function updateSidebarBadges() {}
