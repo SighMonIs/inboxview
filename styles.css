@@ -144,9 +144,10 @@ body{overflow:hidden;background:var(--base);margin:0;padding:0;}
 
 .inbox-detail-header{display:flex;flex-direction:column;gap:8px;}
 .inbox-detail-header-top{display:flex;align-items:center;gap:10px;}
-.inbox-detail-header-bot{display:flex;align-items:center;gap:8px;}
+.inbox-detail-header-bot{display:flex;align-items:center;gap:8px;min-width:0;}
 .inbox-detail-header-bot .status-dd-wrap{flex-shrink:0;}
 .inbox-detail-header-bot .status-dd-btn{width:130px;}
+.inbox-detail-header-bot .btn{flex-shrink:0;}
 .inbox-detail-customer{font-size:20px;font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .inbox-detail-num{
   font-family:ui-monospace,'Cascadia Code',monospace;font-size:12px;
