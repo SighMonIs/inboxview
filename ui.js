@@ -1313,21 +1313,22 @@ function _showInboxDetailFromData(orderId, rows) {
     + bulkBadgeBtn
     + '</div>'
     + '<div style="display:flex;gap:6px;margin-bottom:8px;align-items:stretch">'
-    + '<div class="inbox-search-row" style="flex:1;margin-bottom:0">'
+    + '<div class="inbox-search-row" style="width:50%;margin-bottom:0;flex-shrink:0">'
     + '<i class="ti ti-search inbox-search-icon"></i>'
     + '<input type="text" id="detailItemsSearch" placeholder="Filter items…" oninput="window._itemSearch=this.value;_applyDetailFilters()">'
     + '<button id="detailItemsClear" onclick="document.getElementById(\'detailItemsSearch\').value=\'\';window._itemSearch=\'\';_applyDetailFilters()" style="display:none;background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0 2px;flex-shrink:0"><i class="ti ti-x"></i></button>'
     + '</div>'
+    + '<div style="flex:1"></div>'
     + (catFilterOpts ? '<div class="filter-wrap" id="detailFilterWrap">'
-    + '<button class="sort-btn-main" onclick="toggleDetailFilterPanel(event)" style="border:none;height:100%;padding:0 10px;gap:4px;border-radius:var(--radius)"><i class="ti ti-filter"></i><span id="detailFilterCount" style="display:none;color:var(--accent);font-weight:700;margin-left:2px"></span></button>'
-    + '<div class="filter-panel" id="detailFilterPanel" style="display:none;right:0;left:auto" onclick="event.stopPropagation()">' + catFilterOpts + '</div>'
+    + '<button class="sort-btn-main" onclick="toggleDetailFilterPanel(event)" style="border:none;height:100%;padding:0 10px;gap:6px;border-radius:var(--radius)"><i class="ti ti-filter"></i> Filter<span id="detailFilterCount" style="display:none;color:var(--accent);font-weight:700;margin-left:2px"></span></button>'
+    + '<div class="filter-panel" id="detailFilterPanel" style="display:none" onclick="event.stopPropagation()">' + catFilterOpts + '</div>'
     + '</div>' : '')
     + '<div class="sort-btn-wrap" id="detailSortWrap">'
     + '<div class="sort-btn-group">'
-    + '<button class="sort-btn-main" onclick="toggleDetailSortPanel(event)"><i class="ti ti-arrows-sort"></i></button>'
+    + '<button class="sort-btn-main" id="detailSortBtn" onclick="toggleDetailSortPanel(event)"><i class="ti ti-arrows-sort"></i> Sort</button>'
     + '<button class="sort-btn-dir" id="detailSortDirBtn" onclick="window._itemSortDir*=-1;_applyDetailFilters()" title="Toggle sort direction"><i class="ti ti-arrow-up" id="detailSortDirIcon"></i></button>'
     + '</div>'
-    + '<div class="sort-panel" id="detailSortPanel" style="display:none;right:0;left:auto" onclick="event.stopPropagation()">' + sortPanelOpts + '</div>'
+    + '<div class="sort-panel" id="detailSortPanel" style="display:none" onclick="event.stopPropagation()">' + sortPanelOpts + '</div>'
     + '</div>'
     + '</div>'
     + '<div class="inbox-items-list">' + itemsHtml + '</div>'
@@ -1871,9 +1872,12 @@ function toggleDetailSortPanel(e) {
   p.style.display = '';
 }
 
+var _DETAIL_SORT_LABELS = {default:'Sort', cat:'Category', textval:'Name / Text', price:'Price', qty:'Qty'};
 function _setDetailSort(field) {
   window._itemSort = field;
   document.querySelectorAll('[data-detail-sort]').forEach(function(el){el.classList.toggle('active', el.dataset.detailSort === field);});
+  var btn = document.getElementById('detailSortBtn');
+  if (btn) btn.innerHTML = '<i class="ti ti-arrows-sort"></i> ' + (_DETAIL_SORT_LABELS[field] || 'Sort');
   var sp = document.getElementById('detailSortPanel');
   if (sp) sp.style.display = 'none';
   _applyDetailFilters();
