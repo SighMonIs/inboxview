@@ -4,7 +4,7 @@
 /* ── Centered app shell ──────────────────────────────────── */
 body{overflow:hidden;background:var(--base);margin:0;padding:0;}
 #mainApp{
-  max-width:1200px;margin:10px auto;
+  max-width:900px;margin:10px auto;
   display:flex;flex-direction:column;gap:6px;
   height:calc(100vh - 20px);
 }
