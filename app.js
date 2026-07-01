@@ -481,61 +481,12 @@ async function deleteUser(id, name){
 }
 
 
-// ── Customers modal ────────────────────────────────────────
+// ── Customer add/edit modal ─────────────────────────────────
+// ponytail: the old modal used to list+search *all* customers with its own
+// Add/Edit/Delete row actions; that's now redundant with the Customers inbox
+// view (ui.js _renderViewCustomers/_showCustomerDetail), so this modal is just
+// the single-customer form, opened directly from that view.
 let editingCustomerId = null;
-
-function openCustomersModal(){
-  renderCustomerList();
-  document.getElementById('customersModal').classList.add('open');
-}
-
-function viewCustomer(id){
-  renderCustomerList();
-  document.getElementById('customersModal').classList.add('open');
-  setTimeout(()=>{
-    const cards = document.querySelectorAll('#customersList .customer-card');
-    const idx = customers.findIndex(c=>String(c.id)===String(id));
-    if(idx>=0 && cards[idx]){
-      cards[idx].scrollIntoView({block:'center',behavior:'smooth'});
-      cards[idx].style.transition='box-shadow 0.3s';
-      cards[idx].style.boxShadow='0 0 0 2px var(--accent)';
-      setTimeout(()=>cards[idx].style.boxShadow='',1800);
-    }
-  }, 50);
-}
-function closeCustomersModal(){ document.getElementById('customersModal').classList.remove('open'); }
-
-function renderCustomerList(filter=''){
-  const el = document.getElementById('customersList');
-  const filtered = filter
-    ? customers.filter(c=>c.name.toLowerCase().includes(filter.toLowerCase())||c.email.toLowerCase().includes(filter.toLowerCase()))
-    : customers;
-  if(!filtered.length){
-    el.innerHTML='<div class="empty"><i class="ti ti-users"></i> No customers yet.</div>';
-    return;
-  }
-  // Build set of customer_ids that have orders
-  const usedIds = new Set(orders.map(o=>o.customer_id).filter(Boolean));
-  el.innerHTML = filtered.map(c=>{
-    const hasOrders = usedIds.has(c.id);
-    return `
-    <div class="customer-card">
-      <div class="customer-avatar">${esc(c.name[0]?.toUpperCase()||'?')}</div>
-      <div class="customer-info">
-        <div class="customer-name">${esc(c.name)}</div>
-        <div class="customer-meta">
-          ${c.email?`<span><i class="ti ti-mail"></i> ${esc(c.email)}</span>`:''}
-          ${c.phone?`<span><i class="ti ti-phone"></i> ${esc(c.phone)}</span>`:''}
-        </div>
-        ${c.address?`<div class="customer-address"><i class="ti ti-map-pin"></i> ${esc(c.address)}</div>`:''}
-      </div>
-      <div class="customer-actions">
-        <button class="icon-btn" onclick="openEditCustomer('${esc(c.id)}')" title="Edit"><i class="ti ti-edit"></i></button>
-        ${!hasOrders?`<button class="icon-btn del" onclick="deleteCustomer('${esc(c.id)}','${esc(c.name)}')" title="Delete"><i class="ti ti-trash"></i></button>`:''}
-      </div>
-    </div>`;
-  }).join('');
-}
 
 function openAddCustomer(){
   editingCustomerId = null;
@@ -546,7 +497,7 @@ function openAddCustomer(){
   document.getElementById('cf-notes').value='';
   document.getElementById('cf-error').style.display='none';
   document.getElementById('cf-title').textContent='Add customer';
-  document.getElementById('customerForm').style.display='';
+  document.getElementById('customersModal').classList.add('open');
   document.getElementById('cf-name').focus();
   setTimeout(()=>attachGooglePlaces(document.getElementById('cf-address'), null), 50);
 }
@@ -562,14 +513,22 @@ function openEditCustomer(id){
   document.getElementById('cf-notes').value=c.notes;
   document.getElementById('cf-error').style.display='none';
   document.getElementById('cf-title').textContent='Edit customer';
-  document.getElementById('customerForm').style.display='';
+  document.getElementById('customersModal').classList.add('open');
   document.getElementById('cf-name').focus();
   setTimeout(()=>attachGooglePlaces(document.getElementById('cf-address'), null), 50);
 }
 
 function closeCustomerForm(){
-  document.getElementById('customerForm').style.display='none';
+  document.getElementById('customersModal').classList.remove('open');
   editingCustomerId=null;
+}
+
+function _refreshCustomersView(){
+  if (typeof _sidebarView !== 'undefined' && _sidebarView === 'customers') {
+    const filterEl = document.getElementById('customerViewSearch');
+    _renderViewCustomers(filterEl ? filterEl.value : '');
+    if (_selectedCustomerId) _showCustomerDetail(_selectedCustomerId);
+  }
 }
 
 async function saveCustomer(){
@@ -597,7 +556,7 @@ async function saveCustomer(){
       customers.sort((a,b)=>a.name.localeCompare(b.name));
     }
     closeCustomerForm();
-    renderCustomerList(document.getElementById('customerSearch').value);
+    _refreshCustomersView();
   }catch(e){
     errEl.textContent=e.message; errEl.style.display='';
   }finally{
@@ -610,7 +569,12 @@ function deleteCustomer(id, name){
     try{
       await sbDelete('customers','id=eq.'+encodeURIComponent(id));
       customers=customers.filter(c=>c.id!==id);
-      renderCustomerList(document.getElementById('customerSearch').value);
+      if (String(_selectedCustomerId) === String(id)) {
+        _selectedCustomerId = null;
+        const d = document.getElementById('inboxDetail');
+        if (d) d.innerHTML = '<div class="inbox-no-selection"><i class="ti ti-address-book"></i><p>Select a customer</p></div>';
+      }
+      _refreshCustomersView();
     }catch(e){
       const msg = e.message&&e.message.includes('409')
         ? 'This customer is linked to orders and cannot be deleted.'

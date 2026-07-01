@@ -154,7 +154,10 @@ function renderTable(){
   renderInboxList(list);
 }
 
-function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+// ponytail: for free-text passed as a '...'-quoted JS argument inside an onclick="" attribute —
+// esc() alone isn't enough there since a raw apostrophe (e.g. "O'Brien") terminates the JS string early.
+function escJsAttr(s){return esc(String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'"));}
 function sortBy(k){
   if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=-1;}
   savePreferences();
@@ -1428,9 +1431,12 @@ function _renderViewCustomers(filter) {
     + '<span class="inbox-view-title">Customers</span>'
     + '<span class="inbox-view-count">' + customers.length + '</span>'
     + '</div>'
-    + '<div class="inbox-search-row">'
+    + '<div style="display:flex;gap:6px;align-items:center">'
+    + '<div class="inbox-search-row" style="flex:1;margin-bottom:0">'
     + '<i class="ti ti-search inbox-search-icon"></i>'
-    + '<input type="text" placeholder="Search customers…" value="' + esc(filter) + '" oninput="_renderViewCustomers(this.value)">'
+    + '<input type="text" id="customerViewSearch" placeholder="Search customers…" value="' + esc(filter) + '" oninput="_renderViewCustomers(this.value)">'
+    + '</div>'
+    + '<button class="btn sm" onclick="openAddCustomer()" style="flex-shrink:0"><i class="ti ti-plus"></i> New</button>'
     + '</div>'
   );
   var list = document.getElementById('inboxList');
@@ -1479,7 +1485,8 @@ function _showCustomerDetail(customerId) {
     + '<div class="inbox-detail-customer">' + esc(c.name) + '</div>'
     + (c.email?'<div style="font-size:12px;color:var(--muted);margin-top:2px">'+esc(c.email)+'</div>':'')
     + '</div>'
-    + '<button class="btn sm" onclick="openCustomersModal(\''+esc(String(c.id))+'\')"><i class="ti ti-edit"></i> Edit</button>'
+    + '<button class="btn sm" onclick="openEditCustomer(\''+esc(String(c.id))+'\')"><i class="ti ti-edit"></i> Edit</button>'
+    + '<button class="btn sm icon-only" onclick="deleteCustomer(\''+esc(String(c.id))+'\',\''+escJsAttr(c.name)+'\')" title="Delete customer" style="border-color:rgba(224,92,92,0.3);color:var(--red)"><i class="ti ti-trash"></i></button>'
     + '</div></div>'
     + '<div class="inbox-detail-meta">'
     + (c.phone?'<div class="inbox-detail-meta-item"><i class="ti ti-phone"></i><strong>'+esc(c.phone)+'</strong></div>':'')

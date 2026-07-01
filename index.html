@@ -158,7 +158,7 @@ window.CONFIG = window.CONFIG || { SUPABASE_URL: '', SUPABASE_KEY: '' };
       <div class="inbox-empty-state"><i class="ti ti-loader-2"></i> Loading&hellip;</div>
     </div>
     <div class="inbox-list-footer">
-      <span id="footerVersion">v1.4.20</span>
+      <span id="footerVersion">v1.4.21</span>
       <span style="color:var(--border2)">&middot;</span>
       <span id="statusMsg" class="footer-status">Loading&hellip;</span>
     </div>
@@ -486,45 +486,23 @@ window.CONFIG = window.CONFIG || { SUPABASE_URL: '', SUPABASE_KEY: '' };
 </div>
 
 
-<!-- ══ Customers Modal ══ -->
-<div class="modal-bg" id="customersModal" onclick="if(event.target===this)closeCustomersModal()">
-  <div class="modal" onclick="event.stopPropagation()" style="max-width:640px">
-    <div class="modal-title-row">
-      <div class="modal-title"><i class="ti ti-address-book" style="margin-right:8px;vertical-align:-2px"></i>Customers</div>
-      <button class="btn sm" onclick="openAddCustomer()"><i class="ti ti-plus"></i> Add customer</button>
+<!-- ══ Customer Modal (add/edit a single customer) ══ -->
+<div class="modal-bg" id="customersModal" onclick="if(event.target===this)closeCustomerForm()">
+  <div class="modal sm" onclick="event.stopPropagation()">
+    <div class="modal-title" id="cf-title">Add customer</div>
+    <div class="field-row">
+      <div class="field"><label>Name *</label><input type="text" id="cf-name" placeholder="Full name"></div>
+      <div class="field"><label>Email</label><input type="email" id="cf-email" placeholder="optional"></div>
     </div>
-
-    <!-- Search -->
-    <input type="text" id="customerSearch" placeholder="Search customers&hellip;"
-      style="width:100%;margin-bottom:12px;height:34px;padding:0 10px;font-size:13px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);outline:none"
-      oninput="renderCustomerList(this.value)">
-
-    <!-- Add/Edit form -->
-    <div id="customerForm" style="display:none;margin-bottom:14px">
-      <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:14px">
-        <div class="modal-title" id="cf-title" style="font-size:13px;margin-bottom:12px">Add customer</div>
-        <div class="field-row">
-          <div class="field"><label>Name *</label><input type="text" id="cf-name" placeholder="Full name"></div>
-          <div class="field"><label>Email</label><input type="email" id="cf-email" placeholder="optional"></div>
-        </div>
-        <div class="field-row">
-          <div class="field"><label>Phone</label><input type="tel" id="cf-phone" placeholder="optional"></div>
-          <div class="field"><label>Default address</label><input type="text" id="cf-address" placeholder="optional"></div>
-        </div>
-        <div class="field"><label>Notes</label><input type="text" id="cf-notes" placeholder="Any notes about this customer&hellip;"></div>
-        <div id="cf-error" style="font-size:11px;color:var(--red);margin-top:4px;display:none"></div>
-        <div style="display:flex;gap:8px;margin-top:10px">
-          <button class="btn" onclick="closeCustomerForm()">Cancel</button>
-          <button class="btn primary" id="cf-save" onclick="saveCustomer()"><i class="ti ti-check"></i> Save</button>
-        </div>
-      </div>
+    <div class="field-row">
+      <div class="field"><label>Phone</label><input type="tel" id="cf-phone" placeholder="optional"></div>
+      <div class="field"><label>Default address</label><input type="text" id="cf-address" placeholder="optional"></div>
     </div>
-
-    <!-- Customer list -->
-    <div id="customersList"><div class="empty"><i class="ti ti-loader-2"></i> Loading&hellip;</div></div>
-
+    <div class="field"><label>Notes</label><input type="text" id="cf-notes" placeholder="Any notes about this customer&hellip;"></div>
+    <div id="cf-error" style="font-size:11px;color:var(--red);margin-top:4px;display:none"></div>
     <div class="modal-actions">
-      <button class="btn primary" onclick="closeCustomersModal()">Close</button>
+      <button class="btn" onclick="closeCustomerForm()">Cancel</button>
+      <button class="btn primary" id="cf-save" onclick="saveCustomer()"><i class="ti ti-check"></i> Save</button>
     </div>
   </div>
 </div>
@@ -554,8 +532,8 @@ window.CONFIG = window.CONFIG || { SUPABASE_URL: '', SUPABASE_KEY: '' };
 </div>
 
 <script src="api.js?v=1.1.0"></script>
-<script src="ui.js?v=1.1.1"></script>
-<script src="app.js?v=1.1.1"></script>
+<script src="ui.js?v=1.1.2"></script>
+<script src="app.js?v=1.1.2"></script>
 </body>
 </html>
 
