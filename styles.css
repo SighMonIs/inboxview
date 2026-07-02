@@ -116,9 +116,11 @@ body{overflow:hidden;background:var(--base);margin:0;padding:0;}
 .inbox-card-row1{display:flex;align-items:baseline;justify-content:space-between;gap:6px;margin-bottom:2px;}
 .inbox-card-customer{font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .inbox-card-num{font-family:ui-monospace,'Cascadia Code',monospace;font-size:10px;color:var(--muted);flex-shrink:0;}
-.inbox-card-subject{display:flex;align-items:baseline;justify-content:space-between;gap:6px;font-size:12px;color:var(--text);opacity:0.8;margin-bottom:5px;overflow:hidden;}
-.inbox-card-subject>span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.inbox-card-subject{font-size:12px;color:var(--text);opacity:0.8;margin-bottom:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .inbox-card-footer{display:flex;align-items:center;justify-content:space-between;gap:6px;}
+.inbox-card-items{font-size:12px;color:var(--text);opacity:0.8;margin-bottom:5px;display:flex;flex-direction:column;gap:2px;}
+.inbox-card-item-line{display:flex;justify-content:space-between;gap:6px;}
+.inbox-card-item-line>span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .inbox-card-status{
   font-size:9px;font-weight:700;padding:2px 6px;border-radius:2px;
   text-transform:uppercase;letter-spacing:0.4px;

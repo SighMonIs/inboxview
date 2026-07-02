@@ -1123,10 +1123,15 @@ function renderInboxList(list) {
     const status = first.status || 'Pending';
     const blClass = 'bl-' + status.toLowerCase().replace(' ', '-');
     const isSelected = oid === String(_inboxSelectedOrderId);
-    const itemLabel = rows.map(r => {
+    const itemQtys = new Map();
+    rows.forEach(r => {
       const cat = cats.find(c => String(c.id) === String(r.catId));
-      return (r.qty || 1) + '&times;' + esc(cat ? cat.name : '?');
-    }).join(', ');
+      const name = cat ? cat.name : '?';
+      itemQtys.set(name, (itemQtys.get(name) || 0) + (r.qty || 1));
+    });
+    const itemLines = [...itemQtys.entries()].map(([name, qty]) =>
+      '<div class="inbox-card-item-line"><span>' + esc(name) + '</span><span>' + qty + '</span></div>'
+    ).join('');
     const statusColor = {Pending:'rgba(232,169,58,0.15)',Printing:'rgba(91,156,246,0.15)',Complete:'rgba(92,184,122,0.15)','On Hold':'rgba(224,124,58,0.15)',Cancelled:'rgba(224,92,92,0.15)'}[status]||'rgba(136,136,133,0.15)';
     const statusText = {Pending:'var(--amber)',Printing:'var(--blue)',Complete:'var(--green)','On Hold':'var(--orange)',Cancelled:'var(--red)'}[status]||'var(--muted)';
 
@@ -1136,8 +1141,9 @@ function renderInboxList(list) {
       + '<span class="inbox-card-customer">' + (esc(first.customer) || '?') + '</span>'
       + '<span class="inbox-card-status" style="background:' + statusColor + ';color:' + statusText + '">' + status + '</span>'
       + '</div>'
-      + '<div class="inbox-card-subject">'
-      + '<span>' + itemLabel + ' &middot; ' + esc(first.delivery || 'Post') + '</span>'
+      + '<div class="inbox-card-items">' + itemLines + '</div>'
+      + '<div class="inbox-card-footer">'
+      + '<span>' + esc(first.delivery || 'Post') + '</span>'
       + '<span class="inbox-card-total">$' + total.toFixed(2) + '</span>'
       + '</div>'
       + '</div>'
