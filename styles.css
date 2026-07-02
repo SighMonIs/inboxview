@@ -638,6 +638,8 @@ thead th.sortable{user-select:none;}
 .opt-item{display:grid;grid-template-columns:20px 1fr 180px 32px;gap:8px;align-items:center;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;cursor:default;}
 .opt-item.dragging{opacity:0.4;}
 .opt-item.drag-over{border-color:var(--accent2);background:rgba(232,213,163,0.05);}
+[draggable="true"].dragging{opacity:0.4;}
+[draggable="true"].drag-over{background:rgba(232,213,163,0.05);}
 .opt-drag{color:var(--muted);font-size:14px;cursor:grab;display:flex;align-items:center;}
 .opt-drag:active{cursor:grabbing;}
 .opt-item input,.opt-item select{height:28px;padding:0 6px;font-size:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);outline:none;width:100%;}

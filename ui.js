@@ -1614,6 +1614,8 @@ function _statCard(label, val, icon, color) {
 
 // Settings view
 var _selectedSettingsCat = null;
+var _deliveryReorderMode = false;
+var _paymentReorderMode = false;
 var _SETTINGS_CATS = [
   {id:'payment',  icon:'ti-credit-card', title:'Post and Pay',         desc:'Manage delivery methods and payment methods'},
   {id:'cats',     icon:'ti-category',    title:'Categories & Options',  desc:'Product categories and their options'},
@@ -1702,15 +1704,19 @@ function _showSettingsDetail(catId) {
     if(typeof loadUsers === 'function') { window.editingUserId = null; loadUsers(); }
   } else if (catId === 'payment') {
     var deliveryRows = deliveryOptions.map(function(d, i) {
-      return '<div style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border)">'
-        + '<span style="flex:1;font-weight:500;color:' + (d.archived?'var(--muted)':'var(--text)') + (d.archived?';text-decoration:line-through':'') + '">' + esc(d.name) + '</span>'
+      return '<div' + (_deliveryReorderMode ? ' draggable="true" ondragstart="_reorderDragStart(event,\'delivery\',' + i + ')" ondragover="_reorderDragOver(event,\'delivery\',' + i + ')" ondrop="_reorderDrop(event,\'delivery\',' + i + ')" ondragleave="_reorderDragLeave(event)" ondragend="_reorderDragEnd(event)"' : '')
+        + ' style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border)">'
+        + (_deliveryReorderMode ? '<span class="opt-drag"><i class="ti ti-grip-vertical"></i></span>' : '')
+        + '<span style="flex:1;font-weight:500;' + (_deliveryReorderMode?'padding-left:6px;':'') + 'color:' + (d.archived?'var(--muted)':'var(--text)') + (d.archived?';text-decoration:line-through':'') + '">' + esc(d.name) + '</span>'
         + '<div class="cat-price-wrap"><span>$</span><input type="number" value="' + d.price + '" step="0.01" min="0" style="width:70px" ' + (d.archived?'disabled':'') + ' onchange="_settingsSetDeliveryPrice(' + i + ',this.value)"></div>'
         + '<button class="btn sm" onclick="_settingsToggleDeliveryArchive(' + i + ')" title="' + (d.archived?'Restore':'Archive') + '"><i class="ti ti-' + (d.archived?'eye':'eye-off') + '"></i></button>'
         + '</div>';
     }).join('');
     var rows = paymentOptions.map(function(p, i) {
-      return '<div style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border)">'
-        + '<span style="flex:1;font-weight:500;color:' + (p.archived?'var(--muted)':'var(--text)') + (p.archived?';text-decoration:line-through':'') + '">' + esc(p.name) + '</span>'
+      return '<div' + (_paymentReorderMode ? ' draggable="true" ondragstart="_reorderDragStart(event,\'payment\',' + i + ')" ondragover="_reorderDragOver(event,\'payment\',' + i + ')" ondrop="_reorderDrop(event,\'payment\',' + i + ')" ondragleave="_reorderDragLeave(event)" ondragend="_reorderDragEnd(event)"' : '')
+        + ' style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border)">'
+        + (_paymentReorderMode ? '<span class="opt-drag"><i class="ti ti-grip-vertical"></i></span>' : '')
+        + '<span style="flex:1;font-weight:500;' + (_paymentReorderMode?'padding-left:6px;':'') + 'color:' + (p.archived?'var(--muted)':'var(--text)') + (p.archived?';text-decoration:line-through':'') + '">' + esc(p.name) + '</span>'
         + '<span style="font-size:10px;color:var(--muted);padding:2px 7px;background:var(--surface2);border-radius:10px">' + (p.showRevenue?'revenue':'no revenue') + '</span>'
         + '<button class="btn sm" onclick="_settingsToggleRevenue(' + i + ')" title="Toggle revenue tracking"><i class="ti ti-currency-dollar"></i></button>'
         + '<button class="btn sm" onclick="_settingsToggleArchive(' + i + ')" title="' + (p.archived?'Restore':'Archive') + '"><i class="ti ti-' + (p.archived?'eye':'eye-off') + '"></i></button>'
@@ -1720,7 +1726,8 @@ function _showSettingsDetail(catId) {
       + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">Post and Pay</div></div></div>'
       + '<div class="settings-section-title" style="margin-bottom:6px">Delivery Methods</div>'
       + '<p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">Manage how orders are delivered, and the price for each method.</p>'
-      + '<div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:10px">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
+      + '<button class="btn sm' + (_deliveryReorderMode?' primary':'') + '" onclick="_toggleDeliveryReorder()"><i class="ti ti-arrows-sort"></i> ' + (_deliveryReorderMode?'Done':'Reorder') + '</button>'
       + '<button class="btn sm" onclick="_settingsAddDelivery()"><i class="ti ti-plus"></i> Add Method</button>'
       + '</div>'
       + '<div id="deliveryAddForm" style="display:none;gap:8px;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;margin-bottom:10px">'
@@ -1732,7 +1739,8 @@ function _showSettingsDetail(catId) {
       + '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:20px">' + deliveryRows + '</div>'
       + '<div class="settings-section-title" style="margin-bottom:6px">Payment</div>'
       + '<p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">Manage how customers pay. Enable <strong style="color:var(--text)">revenue</strong> on a method to include it in sales totals.</p>'
-      + '<div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:10px">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
+      + '<button class="btn sm' + (_paymentReorderMode?' primary':'') + '" onclick="_togglePaymentReorder()"><i class="ti ti-arrows-sort"></i> ' + (_paymentReorderMode?'Done':'Reorder') + '</button>'
       + '<button class="btn sm" onclick="_settingsAddPayment()"><i class="ti ti-plus"></i> Add Option</button>'
       + '</div>'
       + '<div id="paymentAddForm" style="display:none;gap:8px;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;margin-bottom:10px">'
@@ -1875,6 +1883,31 @@ function _settingsSaveDelivery() {
   var price = parseFloat(document.getElementById('da-price').value) || 0;
   deliveryOptions.push({name:name, archived:false, price:price});
   saveDeliveryOptions();
+  _showSettingsDetail('payment');
+}
+
+function _toggleDeliveryReorder() { _deliveryReorderMode = !_deliveryReorderMode; _showSettingsDetail('payment'); }
+function _togglePaymentReorder() { _paymentReorderMode = !_paymentReorderMode; _showSettingsDetail('payment'); }
+
+var _reorderDragArr = null, _reorderDragIdx = null;
+function _reorderDragStart(e, arrName, idx) {
+  _reorderDragArr = arrName; _reorderDragIdx = idx;
+  e.currentTarget.classList.add('dragging');
+}
+function _reorderDragOver(e, arrName, idx) {
+  e.preventDefault();
+  if (arrName === _reorderDragArr && idx !== _reorderDragIdx) e.currentTarget.classList.add('drag-over');
+}
+function _reorderDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+function _reorderDragEnd(e) { e.currentTarget.classList.remove('dragging'); _reorderDragArr = null; _reorderDragIdx = null; }
+function _reorderDrop(e, arrName, idx) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (arrName !== _reorderDragArr || _reorderDragIdx === null || _reorderDragIdx === idx) return;
+  var arr = arrName === 'delivery' ? deliveryOptions : paymentOptions;
+  var moved = arr.splice(_reorderDragIdx, 1)[0];
+  arr.splice(idx, 0, moved);
+  if (arrName === 'delivery') saveDeliveryOptions(); else savePaymentOptions();
   _showSettingsDetail('payment');
 }
 
