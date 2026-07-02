@@ -388,7 +388,7 @@ function renderLayerSelectors(idx, optId, savedVal){
   }
   const opt = opts.find(o=>String(o.id)===String(optId));
   const numLayers = opt?.num_colours || 4;
-  container.innerHTML=`<div class="layer-selectors">
+  container.innerHTML=`<div class="layer-selectors" style="grid-template-columns:repeat(${numLayers},1fr)">
     ${Array.from({length:numLayers},(_,i)=>i+1).map(n=>{
       const pickerId=`lp-${idx}-${optId}-${n}`;
       const savedName=saved['Layer '+n]||'';
@@ -456,12 +456,12 @@ function addModelRow(d){
       <div class="model-row-total"><label>Total</label><div class="total-val" id="mt-${idx}">—</div></div>
     </div>
     <div class="model-options" id="mo-${idx}"></div>
-    <div class="model-notes"><input type="text" id="mn-${idx}" value="${esc(d.notes||'')}" placeholder="Item notes (colour, material, special requests…)"></div>
-    <input type="hidden" id="mm-${idx}" value="${esc(d.model||'')}">
-    <input type="hidden" id="opts-${idx}" value="${esc(d.options||'')}">
-    <div class="model-row-footer">
+    <div class="model-notes-row">
+      <input type="text" id="mn-${idx}" value="${esc(d.notes||'')}" placeholder="Item notes (colour, material, special requests…)">
       <button type="button" class="rm-btn-full" onclick="removeModel(this)"><i class="ti ti-trash"></i> Remove Item</button>
-    </div>`;
+    </div>
+    <input type="hidden" id="mm-${idx}" value="${esc(d.model||'')}">
+    <input type="hidden" id="opts-${idx}" value="${esc(d.options||'')}">`;
   const container=document.getElementById('modelRows');
   if(d.catId) container.appendChild(el); else container.prepend(el);
   if(d.catId)renderModelOpts(idx,d.catId,d.options||'');
