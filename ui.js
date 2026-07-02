@@ -497,8 +497,8 @@ function addModelRow(d){
     </div>
     <div class="model-options" id="mo-${idx}"></div>
     <div class="model-notes-row">
+      <label>Notes</label>
       <input type="text" id="mn-${idx}" value="${esc(d.notes||'')}" placeholder="Item notes (colour, material, special requests…)">
-      <button type="button" class="rm-btn-full" onclick="removeModel(this)"><i class="ti ti-trash"></i> Remove Item</button>
     </div>
     <input type="hidden" id="mm-${idx}" value="${esc(d.model||'')}">
     <input type="hidden" id="opts-${idx}" value="${esc(d.options||'')}">`;
