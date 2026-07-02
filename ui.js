@@ -602,9 +602,67 @@ function getModelData(){
   });
 }
 
-// ── Order modals ───────────────────────────────────────────
+// ── Order edit form (inline in the detail pane) ─────────────
+function _orderFormHtml(){
+  return '<div class="inbox-detail">'
+    + '<div class="modal-title-row">'
+    + '<div class="modal-title" id="modalTitle">New Order</div>'
+    + '<div class="date-display" id="f-date-display"></div>'
+    + '<input type="hidden" id="f-date">'
+    + '</div>'
+    + '<div class="field-row">'
+    + '<div class="field">'
+    + '<label>Customer name</label>'
+    + '<div style="position:relative">'
+    + '<input id="f-customer" type="text" placeholder="Search existing or type a new name&hellip;" autocomplete="off" oninput="this.closest(\'.field\').classList.remove(\'field-error\');this.closest(\'.field\').querySelector(\'.field-error-msg\')?.remove()">'
+    + '<div id="customerSuggestions" class="colour-picker-list" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:9999;max-height:200px;overflow-y:auto"></div>'
+    + '</div>'
+    + '<input type="hidden" id="f-customer-id">'
+    + '</div>'
+    + '<div class="field"><label>Delivery type</label><select id="f-delivery"></select></div>'
+    + '</div>'
+    + '<div id="newCustomerPanel" style="display:none;background:rgba(92,184,122,0.06);border:1px solid rgba(92,184,122,0.25);border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:12px">'
+    + '<div style="font-size:11px;font-weight:500;color:var(--green);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px"><i class="ti ti-user-plus" style="margin-right:6px"></i>New customer — add details</div>'
+    + '<div class="field-row">'
+    + '<div class="field"><label>Email</label><input type="email" id="nc-email" placeholder="optional"></div>'
+    + '<div class="field"><label>Phone</label><input type="tel" id="nc-phone" placeholder="optional"></div>'
+    + '</div>'
+    + '<div class="field"><label>Notes</label><input type="text" id="nc-notes" placeholder="Any notes about this customer&hellip;"></div>'
+    + '</div>'
+    + '<div class="field-row">'
+    + '<div class="field">'
+    + '<label>Address / Location</label>'
+    + '<div class="addr-wrap" style="display:flex;gap:6px;align-items:center">'
+    + '<div style="position:relative;flex:1">'
+    + '<input id="f-address" type="text" placeholder="Address or location note&hellip;" autocomplete="off" oninput="this.closest(\'.field\').classList.remove(\'field-error\');this.closest(\'.field\').querySelector(\'.field-error-msg\')?.remove()">'
+    + '<i class="ti ti-map-pin-check addr-tick" id="addrTick"></i>'
+    + '</div>'
+    + '<button class="btn icon-only" id="addrRefreshBtn" onclick="revertToCustomerAddress()" style="flex-shrink:0" title=""><i class="ti ti-refresh"></i></button>'
+    + '</div>'
+    + '<div class="field-hint">Select a suggestion for a validated address, or type any location note freely.</div>'
+    + '</div>'
+    + '<div class="field"><label>Payment</label><select id="f-payment"></select></div>'
+    + '</div>'
+    + '<div class="modal-actions">'
+    + '<div class="order-total-inline"><span class="order-total-lbl">Total</span><span class="order-total-val" id="orderTotal">$0.00</span></div>'
+    + '<div style="flex:1"></div>'
+    + '<button class="btn" onclick="closeModal()">Cancel</button>'
+    + '<button class="btn primary" id="saveBtn" onclick="saveOrder()"><i class="ti ti-check"></i> Save Order</button>'
+    + '</div>'
+    + '<div class="models-section">'
+    + '<div class="models-hdr">'
+    + '<span class="models-label">Items</span>'
+    + '<input type="text" id="itemFilter" placeholder="Filter items…" oninput="filterModelRows(this.value)" style="display:none;height:28px;padding:0 8px;font-size:12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg);color:var(--text);flex:1;min-width:0;margin:0 8px">'
+    + '<button class="btn sm" onclick="addModelRow()"><i class="ti ti-plus"></i> Add item</button>'
+    + '</div>'
+    + '<div class="model-rows" id="modelRows"></div>'
+    + '</div>'
+    + '</div>';
+}
+
 function openAddModal(){
   editOId=null;acInst=null;
+  document.getElementById('inboxDetail').innerHTML=_orderFormHtml();
   document.getElementById('modalTitle').textContent='New Order';
   document.getElementById('f-customer').value='';
   document.getElementById('f-customer-id').value='';
@@ -627,13 +685,13 @@ function openAddModal(){
   document.getElementById('modelRows').innerHTML='';mCounter=0;
   const _if=document.getElementById('itemFilter');if(_if){_if.value='';_if.style.display='none';}
   addModelRow();
-  document.getElementById('orderModal').classList.add('open');
   setTimeout(()=>{document.getElementById('f-customer').focus();initAutocomplete();initCustomerAutocomplete();},80);
 }
 
 function openEdit(orderId){
   const rows=orders.filter(o=>o.orderId===orderId);if(!rows.length)return;
   editOId=orderId;acInst=null;const first=rows[0];
+  document.getElementById('inboxDetail').innerHTML=_orderFormHtml();
   document.getElementById('modalTitle').textContent='Edit Order';
   document.getElementById('f-customer').value=first.customer;
   document.getElementById('f-customer-id').value=first.customer_id||'';
@@ -656,23 +714,17 @@ function openEdit(orderId){
   document.getElementById('modelRows').innerHTML='';mCounter=0;
   const _if2=document.getElementById('itemFilter');if(_if2){_if2.value='';_if2.style.display='none';}
   rows.forEach(r=>addModelRow({model:r.model,catId:r.catId,qty:r.qty,price:r.price,notes:r.notes,options:r.options}));
-  document.getElementById('orderModal').classList.add('open');
   setTimeout(()=>{initAutocomplete();initCustomerAutocomplete();},80);
 }
 
 function closeModal(){
-  document.getElementById('orderModal').classList.remove('open');
-  // Clear validation state
-  document.querySelectorAll('.field-error').forEach(el=>el.classList.remove('field-error'));
-  document.querySelectorAll('.field-error-msg').forEach(el=>el.remove());
-  document.querySelectorAll('.model-row.row-error').forEach(el=>el.classList.remove('row-error'));
-  document.querySelectorAll('.opt-row.opt-error').forEach(el=>el.classList.remove('opt-error'));
-  document.querySelectorAll('.colour-picker-wrap.cp-error').forEach(el=>el.classList.remove('cp-error'));
-  const panel = document.getElementById('newCustomerPanel');
-  if(panel) panel.style.display='none';
-  ['nc-email','nc-phone','nc-notes'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-  const custInput = document.getElementById('f-customer');
-  if(custInput) custInput.classList.remove('cust-linked','cust-new');
+  if(editOId){
+    showInboxDetail(editOId);
+  } else if(_inboxSelectedOrderId){
+    showInboxDetail(_inboxSelectedOrderId);
+  } else {
+    document.getElementById('inboxDetail').innerHTML='<div class="inbox-no-selection"><i class="ti ti-inbox"></i><p>Select an order</p></div>';
+  }
 }
 
 function validateOrder(){
@@ -837,7 +889,7 @@ async function saveOrder(){
   busy=true;
   const btn=document.getElementById('saveBtn');
   btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2"></i> Saving…';
-  setStatus('spin','Saving…');closeModal();
+  setStatus('spin','Saving…');_inboxSelectedOrderId=orderId;
   orders=orders.filter(o=>o.orderId!==orderId);
   orders.unshift(...newRows);renderTable();
   try{
