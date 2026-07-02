@@ -1123,28 +1123,19 @@ function renderInboxList(list) {
     const status = first.status || 'Pending';
     const blClass = 'bl-' + status.toLowerCase().replace(' ', '-');
     const isSelected = oid === String(_inboxSelectedOrderId);
-    const catNames = [...new Set(rows.map(r => {
-      const cat = cats.find(c => String(c.id) === String(r.catId));
-      return cat ? cat.name : null;
-    }).filter(Boolean))].join(', ');
     const itemLabel = rows.length === 1 ? '1 item' : rows.length + ' items';
-    const orderNum = orderNumFromId(oid);
-    const avatarColor = _avatarColor(first.customer || '');
-    const initials = _initials(first.customer || '');
     const statusColor = {Pending:'rgba(232,169,58,0.15)',Printing:'rgba(91,156,246,0.15)',Complete:'rgba(92,184,122,0.15)','On Hold':'rgba(224,124,58,0.15)',Cancelled:'rgba(224,92,92,0.15)'}[status]||'rgba(136,136,133,0.15)';
     const statusText = {Pending:'var(--amber)',Printing:'var(--blue)',Complete:'var(--green)','On Hold':'var(--orange)',Cancelled:'var(--red)'}[status]||'var(--muted)';
 
     return '<div class="inbox-card ' + blClass + (isSelected ? ' selected' : '') + '" onclick="showInboxDetail(\'' + esc(oid) + '\')">'
-      + '<div class="inbox-card-avatar" style="background:' + avatarColor + '">' + esc(initials) + '</div>'
       + '<div class="inbox-card-content">'
       + '<div class="inbox-card-row1">'
       + '<span class="inbox-card-customer">' + (esc(first.customer) || '?') + '</span>'
-      + '<span class="inbox-card-num">' + orderNum + '</span>'
-      + '</div>'
-      + '<div class="inbox-card-subject">' + (esc(catNames) || '?') + ' &middot; ' + itemLabel + '</div>'
-      + '<div class="inbox-card-footer">'
       + '<span class="inbox-card-status" style="background:' + statusColor + ';color:' + statusText + '">' + status + '</span>'
-      + '<span class="inbox-card-total">$' + total.toFixed(2) + '</span>'
+      + '</div>'
+      + '<div class="inbox-card-subject">' + itemLabel + ' &middot; ' + esc(first.delivery || 'Post') + '</div>'
+      + '<div class="inbox-card-footer">'
+      + '<span class="inbox-card-total" style="margin-left:auto">$' + total.toFixed(2) + '</span>'
       + '</div>'
       + '</div>'
       + '</div>';
