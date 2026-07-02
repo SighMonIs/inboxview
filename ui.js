@@ -1717,7 +1717,7 @@ function _showSettingsDetail(catId) {
         + '</div>'
         + '</div>'
         + '<span style="flex:1;font-weight:500;' + (_deliveryReorderMode?'padding-left:6px;':'') + 'color:' + (d.archived?'var(--muted)':'var(--text)') + (d.archived?';text-decoration:line-through':'') + '">' + esc(d.name) + '</span>'
-        + '<div class="cat-price-wrap"><span>$</span><input type="number" value="' + d.price + '" step="0.01" min="0" ' + (d.archived?'disabled':'') + ' onchange="_settingsSetDeliveryPrice(' + i + ',this.value)"></div>'
+        + '<div class="cat-price-wrap"><span>$</span><input type="number" class="ns-init" value="' + d.price.toFixed(2) + '" step="0.01" min="0" ' + (d.archived?'disabled':'') + ' onchange="_settingsSetDeliveryPrice(' + i + ',this.value)"></div>'
         + '<button class="btn sm" onclick="_settingsToggleDeliveryArchive(' + i + ')" title="' + (d.archived?'Restore':'Archive') + '"><i class="ti ti-' + (d.archived?'eye':'eye-off') + '"></i></button>'
         + '</div>';
     }).join('');
@@ -1749,7 +1749,7 @@ function _showSettingsDetail(catId) {
       + '</div>'
       + '</div>'
       + '<input type="text" id="da-name" placeholder="Delivery method name&hellip;" onkeydown="if(event.key===\'Enter\')_settingsSaveDelivery()" style="flex:1;height:30px;padding:0 8px;font-size:12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg);color:var(--text);outline:none">'
-      + '<div class="cat-price-wrap"><span>$</span><input type="number" id="da-price" value="0" step="0.01" min="0" onkeydown="if(event.key===\'Enter\')_settingsSaveDelivery()"></div>'
+      + '<div class="cat-price-wrap"><span>$</span><input type="number" id="da-price" class="ns-init" value="0.00" step="0.01" min="0" onkeydown="if(event.key===\'Enter\')_settingsSaveDelivery()"></div>'
       + '<button class="btn sm" onclick="_settingsCancelAddDelivery()">Cancel</button>'
       + '<button class="btn sm primary" onclick="_settingsSaveDelivery()"><i class="ti ti-check"></i> Add</button>'
       + '</div>'
@@ -1906,7 +1906,7 @@ function _settingsSetDeliveryIcon(key, icon) {
 }
 function _settingsAddDelivery() {
   document.getElementById('da-name').value = '';
-  document.getElementById('da-price').value = '0';
+  document.getElementById('da-price').value = '0.00';
   _daNewIcon = 'ti-truck-delivery';
   document.getElementById('da-icon-btn').innerHTML = '<i class="ti ' + _daNewIcon + '"></i>';
   document.getElementById('deliveryAddForm').style.display = 'flex';
