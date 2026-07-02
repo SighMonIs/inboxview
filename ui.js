@@ -1123,7 +1123,10 @@ function renderInboxList(list) {
     const status = first.status || 'Pending';
     const blClass = 'bl-' + status.toLowerCase().replace(' ', '-');
     const isSelected = oid === String(_inboxSelectedOrderId);
-    const itemLabel = rows.length === 1 ? '1 item' : rows.length + ' items';
+    const itemLabel = rows.map(r => {
+      const cat = cats.find(c => String(c.id) === String(r.catId));
+      return (r.qty || 1) + '&times;' + esc(cat ? cat.name : '?');
+    }).join(', ');
     const statusColor = {Pending:'rgba(232,169,58,0.15)',Printing:'rgba(91,156,246,0.15)',Complete:'rgba(92,184,122,0.15)','On Hold':'rgba(224,124,58,0.15)',Cancelled:'rgba(224,92,92,0.15)'}[status]||'rgba(136,136,133,0.15)';
     const statusText = {Pending:'var(--amber)',Printing:'var(--blue)',Complete:'var(--green)','On Hold':'var(--orange)',Cancelled:'var(--red)'}[status]||'var(--muted)';
 
