@@ -1133,9 +1133,9 @@ function renderInboxList(list) {
       + '<span class="inbox-card-customer">' + (esc(first.customer) || '?') + '</span>'
       + '<span class="inbox-card-status" style="background:' + statusColor + ';color:' + statusText + '">' + status + '</span>'
       + '</div>'
-      + '<div class="inbox-card-subject">' + itemLabel + ' &middot; ' + esc(first.delivery || 'Post') + '</div>'
-      + '<div class="inbox-card-footer">'
-      + '<span class="inbox-card-total" style="margin-left:auto">$' + total.toFixed(2) + '</span>'
+      + '<div class="inbox-card-subject">'
+      + '<span>' + itemLabel + ' &middot; ' + esc(first.delivery || 'Post') + '</span>'
+      + '<span class="inbox-card-total">$' + total.toFixed(2) + '</span>'
       + '</div>'
       + '</div>'
       + '</div>';
