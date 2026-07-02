@@ -1211,7 +1211,8 @@ function _showInboxDetailFromData(orderId, rows) {
     + '<div class="status-dd-list" id="sdd-order-' + esc(String(orderId)) + '">' + statusOpts + '</div>'
     + '</div>';
 
-  const deliveryIcon = first.delivery === 'Pick Up' ? '<i class="ti ti-hand-stop"></i>' : '<i class="ti ti-mail"></i>';
+  const deliveryOpt = deliveryOptions.find(d => d.name === first.delivery);
+  const deliveryIcon = '<i class="ti ' + ((deliveryOpt && deliveryOpt.icon) || 'ti-mail') + '"></i>';
 
   // Compute unique categories in this order for the filter panel
   const _detailCatNames = [...new Set(rows.map(r => { const c = cats.find(x => String(x.id) === String(r.catId)); return c ? c.name : '?'; }))].sort();
@@ -1707,6 +1708,14 @@ function _showSettingsDetail(catId) {
       return '<div' + (_deliveryReorderMode ? ' draggable="true" ondragstart="_reorderDragStart(event,\'delivery\',' + i + ')" ondragover="_reorderDragOver(event,\'delivery\',' + i + ')" ondrop="_reorderDrop(event,\'delivery\',' + i + ')" ondragleave="_reorderDragLeave(event)" ondragend="_reorderDragEnd(event)"' : '')
         + ' style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border)">'
         + (_deliveryReorderMode ? '<span class="opt-drag"><i class="ti ti-grip-vertical"></i></span>' : '')
+        + '<div class="icon-picker-wrap">'
+        + '<button class="icon-picker-btn" onclick="event.stopPropagation();toggleDeliveryIconPicker(' + i + ')" title="Change icon" ' + (d.archived?'disabled':'') + '><i class="ti ' + (d.icon||'ti-truck-delivery') + '"></i></button>'
+        + '<div class="icon-picker-list" id="dip-' + i + '" style="display:none">'
+        + DELIVERY_ICON_PACK.map(function(ic){
+            return '<button class="icon-picker-opt' + (ic===d.icon?' selected':'') + '" onclick="_settingsSetDeliveryIcon(' + i + ',\'' + ic + '\')" title="' + ic + '"><i class="ti ' + ic + '"></i></button>';
+          }).join('')
+        + '</div>'
+        + '</div>'
         + '<span style="flex:1;font-weight:500;' + (_deliveryReorderMode?'padding-left:6px;':'') + 'color:' + (d.archived?'var(--muted)':'var(--text)') + (d.archived?';text-decoration:line-through':'') + '">' + esc(d.name) + '</span>'
         + '<div class="cat-price-wrap"><span>$</span><input type="number" value="' + d.price + '" step="0.01" min="0" ' + (d.archived?'disabled':'') + ' onchange="_settingsSetDeliveryPrice(' + i + ',this.value)"></div>'
         + '<button class="btn sm" onclick="_settingsToggleDeliveryArchive(' + i + ')" title="' + (d.archived?'Restore':'Archive') + '"><i class="ti ti-' + (d.archived?'eye':'eye-off') + '"></i></button>'
@@ -1731,6 +1740,14 @@ function _showSettingsDetail(catId) {
       + '<button class="btn sm" onclick="_settingsAddDelivery()"><i class="ti ti-plus"></i> Add Method</button>'
       + '</div>'
       + '<div id="deliveryAddForm" style="display:none;gap:8px;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;margin-bottom:10px">'
+      + '<div class="icon-picker-wrap">'
+      + '<button class="icon-picker-btn" id="da-icon-btn" onclick="event.stopPropagation();toggleDeliveryIconPicker(\'new\')" title="Change icon"><i class="ti ' + _daNewIcon + '"></i></button>'
+      + '<div class="icon-picker-list" id="dip-new" style="display:none">'
+      + DELIVERY_ICON_PACK.map(function(ic){
+          return '<button class="icon-picker-opt' + (ic===_daNewIcon?' selected':'') + '" onclick="_settingsSetDeliveryIcon(\'new\',\'' + ic + '\')" title="' + ic + '"><i class="ti ' + ic + '"></i></button>';
+        }).join('')
+      + '</div>'
+      + '</div>'
       + '<input type="text" id="da-name" placeholder="Delivery method name&hellip;" onkeydown="if(event.key===\'Enter\')_settingsSaveDelivery()" style="flex:1;height:30px;padding:0 8px;font-size:12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg);color:var(--text);outline:none">'
       + '<div class="cat-price-wrap"><span>$</span><input type="number" id="da-price" value="0" step="0.01" min="0" onkeydown="if(event.key===\'Enter\')_settingsSaveDelivery()"></div>'
       + '<button class="btn sm" onclick="_settingsCancelAddDelivery()">Cancel</button>'
@@ -1868,9 +1885,30 @@ function _settingsSetDeliveryPrice(i, val) {
   deliveryOptions[i].price = parseFloat(val) || 0;
   saveDeliveryOptions();
 }
+var _daNewIcon = 'ti-truck-delivery';
+function toggleDeliveryIconPicker(key) {
+  var list = document.getElementById('dip-' + key);
+  if (!list) return;
+  var isOpen = list.style.display !== 'none';
+  document.querySelectorAll('.icon-picker-list').forEach(function(el){ el.style.display = 'none'; });
+  list.style.display = isOpen ? 'none' : 'grid';
+}
+function _settingsSetDeliveryIcon(key, icon) {
+  document.querySelectorAll('.icon-picker-list').forEach(function(el){ el.style.display = 'none'; });
+  if (key === 'new') {
+    _daNewIcon = icon;
+    document.getElementById('da-icon-btn').innerHTML = '<i class="ti ' + icon + '"></i>';
+    return;
+  }
+  deliveryOptions[key].icon = icon;
+  saveDeliveryOptions();
+  _showSettingsDetail('payment');
+}
 function _settingsAddDelivery() {
   document.getElementById('da-name').value = '';
   document.getElementById('da-price').value = '0';
+  _daNewIcon = 'ti-truck-delivery';
+  document.getElementById('da-icon-btn').innerHTML = '<i class="ti ' + _daNewIcon + '"></i>';
   document.getElementById('deliveryAddForm').style.display = 'flex';
   document.getElementById('da-name').focus();
 }
@@ -1881,7 +1919,7 @@ function _settingsSaveDelivery() {
   var name = document.getElementById('da-name').value.trim();
   if (!name) return;
   var price = parseFloat(document.getElementById('da-price').value) || 0;
-  deliveryOptions.push({name:name, archived:false, price:price});
+  deliveryOptions.push({name:name, archived:false, price:price, icon:_daNewIcon});
   saveDeliveryOptions();
   _showSettingsDetail('payment');
 }

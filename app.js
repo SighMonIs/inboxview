@@ -17,8 +17,15 @@ function getActivePaymentOptions(){
 
 // ── Delivery options config ──────────────────────────────
 let deliveryOptions = JSON.parse(localStorage.getItem('pd_delivery_opts')||'null') || [
-  {name:'Post',    archived:false, price:0},
-  {name:'Pick Up', archived:false, price:0}
+  {name:'Post',    archived:false, price:0, icon:'ti-mail'},
+  {name:'Pick Up', archived:false, price:0, icon:'ti-hand-stop'}
+];
+
+const DELIVERY_ICON_PACK = [
+  'ti-mail','ti-hand-stop','ti-truck-delivery','ti-package','ti-box',
+  'ti-walk','ti-bike','ti-car','ti-plane','ti-ship','ti-train','ti-rocket',
+  'ti-building-store','ti-home','ti-map-pin','ti-send','ti-forklift',
+  'ti-parking','ti-door','ti-gift','ti-shopping-bag','ti-clock','ti-calendar-event'
 ];
 
 function saveDeliveryOptions(){
@@ -1529,6 +1536,9 @@ function setStatus(state,msg){
 document.addEventListener('click', e=>{
   if(!e.target.closest('.colour-picker-wrap')&&!e.target.closest('.colour-combo-option')){
     document.querySelectorAll('.colour-picker-list').forEach(el=>el.style.display='none');
+  }
+  if(!e.target.closest('.icon-picker-wrap')){
+    document.querySelectorAll('.icon-picker-list').forEach(el=>el.style.display='none');
   }
   if(!e.target.closest('#detailFilterWrap')){const p=document.getElementById('detailFilterPanel');if(p)p.style.display='none';}
   if(!e.target.closest('#detailSortWrap')){const p=document.getElementById('detailSortPanel');if(p)p.style.display='none';}
