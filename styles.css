@@ -342,6 +342,11 @@ tbody tr.note-inline-row + tr td{border-top:1px solid var(--border);}
 .modal-title-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;}
 .modal-title-row .modal-title{margin-bottom:0;}
 .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:1.5rem;}
+/* Inline order form (rendered inside .inbox-detail's flex gap) — the gap already
+   spaces these blocks, so the modal-context margins above would double up. */
+.inbox-detail .modal-title-row{margin-bottom:0;}
+.inbox-detail .modal-actions{margin-top:0;}
+.inbox-detail .models-section{margin-top:0;}
 /* Confirm dialog */
 .confirm-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:500;align-items:center;justify-content:center;padding:1rem;}
 .confirm-bg.open{display:flex;}

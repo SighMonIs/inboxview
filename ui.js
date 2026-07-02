@@ -545,9 +545,10 @@ function filterModelRows(q){
 
 function _updateItemFilter(){
   const count=document.querySelectorAll('#modelRows .model-row').length;
+  const wrap=document.getElementById('itemFilterWrap');
   const f=document.getElementById('itemFilter');
-  if(!f)return;
-  if(count>5){f.style.display='';} else {f.style.display='none';f.value='';filterModelRows('');}
+  if(!wrap||!f)return;
+  if(count>5){wrap.style.display='';} else {wrap.style.display='none';f.value='';filterModelRows('');}
 }
 
 function calcTotal(){
@@ -694,7 +695,10 @@ function _orderFormHtml(){
     + '<div class="models-section">'
     + '<div class="models-hdr">'
     + '<span class="models-label">Items</span>'
-    + '<input type="text" id="itemFilter" placeholder="Filter items…" oninput="filterModelRows(this.value)" style="display:none;height:28px;padding:0 8px;font-size:12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg);color:var(--text);flex:1;min-width:0;margin:0 8px">'
+    + '<div class="inbox-search-row" id="itemFilterWrap" style="display:none;flex:1;min-width:0;margin:0 8px">'
+    + '<i class="ti ti-search inbox-search-icon"></i>'
+    + '<input type="text" id="itemFilter" placeholder="Filter items…" oninput="filterModelRows(this.value)">'
+    + '</div>'
     + '<button class="btn sm" onclick="addModelRow()"><i class="ti ti-plus"></i> Add item</button>'
     + '</div>'
     + '<div class="model-rows" id="modelRows"></div>'
@@ -725,7 +729,8 @@ function openAddModal(){
   document.getElementById('f-date').value=today;
   document.getElementById('f-date-display').textContent=today;
   document.getElementById('modelRows').innerHTML='';mCounter=0;
-  const _if=document.getElementById('itemFilter');if(_if){_if.value='';_if.style.display='none';}
+  const _if=document.getElementById('itemFilter');if(_if)_if.value='';
+  const _ifw=document.getElementById('itemFilterWrap');if(_ifw)_ifw.style.display='none';
   addModelRow();
   setTimeout(()=>{document.getElementById('f-customer').focus();initAutocomplete();initCustomerAutocomplete();},80);
 }
@@ -754,7 +759,8 @@ function openEdit(orderId){
   document.getElementById('f-date').value=d;
   document.getElementById('f-date-display').textContent=d;
   document.getElementById('modelRows').innerHTML='';mCounter=0;
-  const _if2=document.getElementById('itemFilter');if(_if2){_if2.value='';_if2.style.display='none';}
+  const _if2=document.getElementById('itemFilter');if(_if2)_if2.value='';
+  const _ifw2=document.getElementById('itemFilterWrap');if(_ifw2)_ifw2.style.display='none';
   rows.forEach(r=>addModelRow({model:r.model,catId:r.catId,qty:r.qty,price:r.price,notes:r.notes,options:r.options}));
   setTimeout(()=>{initAutocomplete();initCustomerAutocomplete();},80);
 }
