@@ -573,14 +573,10 @@ function removeModel(btn){
       showTypeConfirm(
         `Type the customer name to confirm permanently deleting this order:\n\n"${customer}"`,
         customer,
-        async()=>{
+        ()=>{
+          const orderId=editOId;
           closeModal();
-          setStatus('spin','Deleting…');
-          orders=orders.filter(o=>o.orderId!==editOId);renderTable();
-          try{
-            await sbDelete('orders','order_id=eq.'+encodeURIComponent(editOId));
-            setStatus('ok','Deleted · '+uniqueOrderCount()+' orders');
-          }catch(e){setStatus('err','Delete failed: '+e.message);}
+          _deleteOrderWithUndo(orderId);
         }
       );
     },{confirmLabel:'Delete Order',isDanger:true});
@@ -1025,18 +1021,72 @@ function printShippingLabel(customer, address, orderId){
   if(w){w.document.write(html);w.document.close();}
 }
 
-async function deleteOrder(orderId){
+function deleteOrder(orderId){
   const rows=orders.filter(o=>o.orderId===orderId);
-  const msg = rows.length>1?`Delete this order (${rows.length} models)?`:'Delete this order?';
-  showConfirm(msg, async ()=>{
+  if(!rows.length)return;
+  const customer=rows[0].customer||'this order';
+  showTypeConfirm(
+    `Type the customer name to confirm permanently deleting this order:\n\n"${customer}"`,
+    customer,
+    ()=>_deleteOrderWithUndo(orderId)
+  );
+}
+
+// ── Soft delete: optimistic remove + a few seconds to undo before the
+// actual DELETE call fires. Shared by the header Delete button and the
+// remove-last-item flow.
+const UNDO_GRACE_MS=7000;
+let _pendingOrderDeletes={};
+
+function _deleteOrderWithUndo(orderId){
+  const rows=orders.filter(o=>o.orderId===orderId);
+  if(!rows.length)return;
+  const customer=rows[0].customer||'Order';
+  orders=orders.filter(o=>o.orderId!==orderId);
+  if(String(_inboxSelectedOrderId)===String(orderId)){
+    _inboxSelectedOrderId=null;
+    const detail=document.getElementById('inboxDetail');
+    if(detail)detail.innerHTML='<div class="inbox-no-selection"><i class="ti ti-inbox"></i><p>Select an order</p></div>';
+  }
+  renderTable();
+  const timeoutId=setTimeout(async()=>{
+    delete _pendingOrderDeletes[orderId];
     setStatus('spin','Deleting…');
-    orders=orders.filter(o=>o.orderId!==orderId);renderTable();
     try{
-      await sbDelete('orders', 'order_id=eq.'+encodeURIComponent(orderId));
+      await sbDelete('orders','order_id=eq.'+encodeURIComponent(orderId));
       setStatus('ok','Deleted · '+uniqueOrderCount()+' orders');
     }catch(e){setStatus('err','Delete failed: '+e.message);}
-  });
-  return;
+  },UNDO_GRACE_MS);
+  _pendingOrderDeletes[orderId]={timeoutId,rows};
+  _showUndoToast(customer+' deleted',()=>_undoOrderDelete(orderId));
+}
+
+function _undoOrderDelete(orderId){
+  const pending=_pendingOrderDeletes[orderId];
+  if(!pending)return;
+  clearTimeout(pending.timeoutId);
+  delete _pendingOrderDeletes[orderId];
+  orders.push(...pending.rows);
+  renderTable();
+  setStatus('ok','Restored · '+uniqueOrderCount()+' orders');
+}
+
+let _undoToastFn=null,_undoToastHideTimer=null;
+function _showUndoToast(msg,undoFn){
+  _undoToastFn=undoFn;
+  const toast=document.getElementById('undoToast');
+  if(!toast)return;
+  document.getElementById('undoToastMsg').textContent=msg;
+  toast.style.display='flex';
+  clearTimeout(_undoToastHideTimer);
+  _undoToastHideTimer=setTimeout(()=>{toast.style.display='none';},UNDO_GRACE_MS);
+}
+function _undoToastAction(){
+  if(_undoToastFn)_undoToastFn();
+  _undoToastFn=null;
+  clearTimeout(_undoToastHideTimer);
+  const toast=document.getElementById('undoToast');
+  if(toast)toast.style.display='none';
 }
 
 // ── Categories modal ───────────────────────────────────────

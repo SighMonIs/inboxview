@@ -461,6 +461,12 @@ window.CONFIG = window.CONFIG || { SUPABASE_URL: '', SUPABASE_KEY: '' };
   </div>
 </div>
 
+<!-- Undo toast -->
+<div class="undo-toast" id="undoToast" style="display:none">
+  <span id="undoToastMsg"></span>
+  <button class="btn sm" onclick="_undoToastAction()">Undo</button>
+</div>
+
 <script src="api.js?v=1.1.0"></script>
 <script src="ui.js?v=1.1.3"></script>
 <script src="app.js?v=1.1.2"></script>
