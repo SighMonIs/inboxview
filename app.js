@@ -15,6 +15,20 @@ function getActivePaymentOptions(){
   return paymentOptions.filter(p=>!p.archived);
 }
 
+// ── Delivery options config ──────────────────────────────
+let deliveryOptions = JSON.parse(localStorage.getItem('pd_delivery_opts')||'null') || [
+  {name:'Post',    archived:false, price:0},
+  {name:'Pick Up', archived:false, price:0}
+];
+
+function saveDeliveryOptions(){
+  localStorage.setItem('pd_delivery_opts', JSON.stringify(deliveryOptions));
+}
+
+function getActiveDeliveryOptions(){
+  return deliveryOptions.filter(d=>!d.archived);
+}
+
 function openCatModal(){
   // Sync checkbox state
   const cb = document.getElementById('showArchivedCb');

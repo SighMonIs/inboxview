@@ -611,7 +611,10 @@ function openAddModal(){
   document.getElementById('f-address').value='';
   document.getElementById('f-address').classList.remove('validated');
   document.getElementById('addrTick').style.display='none';
-  document.getElementById('f-delivery').value='Post';
+  // Build delivery dropdown from config
+  const fDelivery = document.getElementById('f-delivery');
+  fDelivery.innerHTML = getActiveDeliveryOptions().map(d=>`<option value="${esc(d.name)}">${esc(d.name)}</option>`).join('');
+  fDelivery.value = getActiveDeliveryOptions()[0]?.name||'Post';
   // Build payment dropdown from config
   const fPayment = document.getElementById('f-payment');
   fPayment.innerHTML = getActivePaymentOptions().map(p=>`<option value="${esc(p.name)}">${esc(p.name)}</option>`).join('');
@@ -641,7 +644,9 @@ function openEdit(orderId){
   document.getElementById('f-address').value=first.address||'';
   if(first.address){document.getElementById('f-address').classList.add('validated');document.getElementById('addrTick').style.display='';}
   else{document.getElementById('f-address').classList.remove('validated');document.getElementById('addrTick').style.display='none';}
-  document.getElementById('f-delivery').value=first.delivery||'Post';
+  const fDelivery2 = document.getElementById('f-delivery');
+  fDelivery2.innerHTML = getActiveDeliveryOptions().map(d=>`<option value="${esc(d.name)}">${esc(d.name)}</option>`).join('');
+  fDelivery2.value = first.delivery||getActiveDeliveryOptions()[0]?.name||'Post';
   const fPayment2 = document.getElementById('f-payment');
   fPayment2.innerHTML = getActivePaymentOptions().map(p=>`<option value="${esc(p.name)}">${esc(p.name)}</option>`).join('');
   fPayment2.value = first.payment||getActivePaymentOptions()[0]?.name||'No';
@@ -1610,7 +1615,7 @@ function _statCard(label, val, icon, color) {
 // Settings view
 var _selectedSettingsCat = null;
 var _SETTINGS_CATS = [
-  {id:'payment',  icon:'ti-credit-card', title:'Payment Options',      desc:'Manage payment methods and revenue tracking'},
+  {id:'payment',  icon:'ti-credit-card', title:'Post and Pay',         desc:'Manage delivery methods and payment methods'},
   {id:'cats',     icon:'ti-category',    title:'Categories & Options',  desc:'Product categories and their options'},
   {id:'colours',  icon:'ti-brush',       title:'Colour Library',        desc:'Available colour swatches'},
   {id:'users',    icon:'ti-users',       title:'Users',                 desc:'Invite and manage app users'},
@@ -1696,6 +1701,13 @@ function _showSettingsDetail(catId) {
       + '</div>';
     if(typeof loadUsers === 'function') { window.editingUserId = null; loadUsers(); }
   } else if (catId === 'payment') {
+    var deliveryRows = deliveryOptions.map(function(d, i) {
+      return '<div style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border)">'
+        + '<span style="flex:1;font-weight:500;color:' + (d.archived?'var(--muted)':'var(--text)') + (d.archived?';text-decoration:line-through':'') + '">' + esc(d.name) + '</span>'
+        + '<div class="cat-price-wrap"><span>$</span><input type="number" value="' + d.price + '" step="0.01" min="0" style="width:70px" ' + (d.archived?'disabled':'') + ' onchange="_settingsSetDeliveryPrice(' + i + ',this.value)"></div>'
+        + '<button class="btn sm" onclick="_settingsToggleDeliveryArchive(' + i + ')" title="' + (d.archived?'Restore':'Archive') + '"><i class="ti ti-' + (d.archived?'eye':'eye-off') + '"></i></button>'
+        + '</div>';
+    }).join('');
     var rows = paymentOptions.map(function(p, i) {
       return '<div style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border)">'
         + '<span style="flex:1;font-weight:500;color:' + (p.archived?'var(--muted)':'var(--text)') + (p.archived?';text-decoration:line-through':'') + '">' + esc(p.name) + '</span>'
@@ -1705,7 +1717,14 @@ function _showSettingsDetail(catId) {
         + '</div>';
     }).join('');
     detail.innerHTML = '<div class="inbox-detail">'
-      + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">Payment Options</div></div></div>'
+      + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">Post and Pay</div></div></div>'
+      + '<div class="settings-section-title" style="margin-bottom:6px">Delivery Methods</div>'
+      + '<p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">Manage how orders are delivered, and the price for each method.</p>'
+      + '<div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:10px">'
+      + '<button class="btn sm" onclick="_settingsAddDelivery()"><i class="ti ti-plus"></i> Add Method</button>'
+      + '</div>'
+      + '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:20px">' + deliveryRows + '</div>'
+      + '<div class="settings-section-title" style="margin-bottom:6px">Payment</div>'
       + '<p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">Manage how customers pay. Enable <strong style="color:var(--text)">revenue</strong> on a method to include it in sales totals.</p>'
       + '<div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:10px">'
       + '<button class="btn sm" onclick="_settingsAddPayment()"><i class="ti ti-plus"></i> Add Option</button>'
@@ -1808,6 +1827,23 @@ function _settingsAddPayment() {
   var isRevenue = confirm('Does this payment option generate revenue?');
   paymentOptions.push({name:name.trim(), archived:false, showRevenue:isRevenue});
   savePaymentOptions();
+  _showSettingsDetail('payment');
+}
+
+function _settingsToggleDeliveryArchive(i) {
+  deliveryOptions[i].archived = !deliveryOptions[i].archived;
+  saveDeliveryOptions();
+  _showSettingsDetail('payment');
+}
+function _settingsSetDeliveryPrice(i, val) {
+  deliveryOptions[i].price = parseFloat(val) || 0;
+  saveDeliveryOptions();
+}
+function _settingsAddDelivery() {
+  var name = prompt('Delivery method name:');
+  if (!name || !name.trim()) return;
+  deliveryOptions.push({name:name.trim(), archived:false, price:0});
+  saveDeliveryOptions();
   _showSettingsDetail('payment');
 }
 
