@@ -1708,7 +1708,7 @@ function _showSettingsDetail(catId) {
         + ' style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border)">'
         + (_deliveryReorderMode ? '<span class="opt-drag"><i class="ti ti-grip-vertical"></i></span>' : '')
         + '<span style="flex:1;font-weight:500;' + (_deliveryReorderMode?'padding-left:6px;':'') + 'color:' + (d.archived?'var(--muted)':'var(--text)') + (d.archived?';text-decoration:line-through':'') + '">' + esc(d.name) + '</span>'
-        + '<div class="cat-price-wrap"><span>$</span><input type="number" value="' + d.price + '" step="0.01" min="0" style="width:70px" ' + (d.archived?'disabled':'') + ' onchange="_settingsSetDeliveryPrice(' + i + ',this.value)"></div>'
+        + '<div class="cat-price-wrap"><span>$</span><input type="number" value="' + d.price + '" step="0.01" min="0" ' + (d.archived?'disabled':'') + ' onchange="_settingsSetDeliveryPrice(' + i + ',this.value)"></div>'
         + '<button class="btn sm" onclick="_settingsToggleDeliveryArchive(' + i + ')" title="' + (d.archived?'Restore':'Archive') + '"><i class="ti ti-' + (d.archived?'eye':'eye-off') + '"></i></button>'
         + '</div>';
     }).join('');
@@ -1732,7 +1732,7 @@ function _showSettingsDetail(catId) {
       + '</div>'
       + '<div id="deliveryAddForm" style="display:none;gap:8px;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;margin-bottom:10px">'
       + '<input type="text" id="da-name" placeholder="Delivery method name&hellip;" onkeydown="if(event.key===\'Enter\')_settingsSaveDelivery()" style="flex:1;height:30px;padding:0 8px;font-size:12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg);color:var(--text);outline:none">'
-      + '<div class="cat-price-wrap"><span>$</span><input type="number" id="da-price" value="0" step="0.01" min="0" style="width:70px" onkeydown="if(event.key===\'Enter\')_settingsSaveDelivery()"></div>'
+      + '<div class="cat-price-wrap"><span>$</span><input type="number" id="da-price" value="0" step="0.01" min="0" onkeydown="if(event.key===\'Enter\')_settingsSaveDelivery()"></div>'
       + '<button class="btn sm" onclick="_settingsCancelAddDelivery()">Cancel</button>'
       + '<button class="btn sm primary" onclick="_settingsSaveDelivery()"><i class="ti ti-check"></i> Add</button>'
       + '</div>'
