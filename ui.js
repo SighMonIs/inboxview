@@ -404,10 +404,10 @@ function buildLayerSwatch(id, selectedName, layerNum, onChangeFn){
   const swatchBg = sel ? sel.code : 'transparent';
   const label    = sel ? sel.name : '— none —';
   return `<div class="layer-swatch-wrap" id="cpw-${id}" data-value="${esc(selectedName||'')}">
-    <button type="button" class="layer-swatch-btn" style="background:${swatchBg}" title="Layer ${layerNum}: ${esc(label)}" onclick="event.stopPropagation();toggleLayerSwatchPicker('${id}',this)"></button>
+    <button type="button" class="layer-swatch-btn" style="background:${swatchBg}" data-tt="Layer ${layerNum}: ${esc(label)}" onclick="event.stopPropagation();toggleLayerSwatchPicker('${id}',this)"></button>
     <div class="layer-swatch-picker" id="lsp-${id}" style="display:none">
-      <button type="button" class="layer-swatch-opt" style="background:transparent;border-style:dashed" title="— none —" onclick="selectLayerSwatch('${id}','',${onChangeFn})"></button>
-      ${avail.map(c=>`<button type="button" class="layer-swatch-opt${c.name===selectedName?' selected':''}" style="background:${esc(c.code)}" title="${esc(c.name)}" onclick="selectLayerSwatch('${id}','${escJsAttr(c.name)}',${onChangeFn})"></button>`).join('')}
+      <button type="button" class="layer-swatch-opt" style="background:transparent;border-style:dashed" data-name="" data-tt="— none —" onclick="selectLayerSwatch('${id}','',${onChangeFn})"></button>
+      ${avail.map(c=>`<button type="button" class="layer-swatch-opt${c.name===selectedName?' selected':''}" style="background:${esc(c.code)}" data-name="${esc(c.name)}" data-tt="${esc(c.name)}" onclick="selectLayerSwatch('${id}','${escJsAttr(c.name)}',${onChangeFn})"></button>`).join('')}
     </div>
   </div>`;
 }
@@ -429,10 +429,10 @@ function selectLayerSwatch(id, name, onChangeFn){
   const c=avail.find(c=>c.name===name);
   const wrap=document.getElementById('cpw-'+id);
   const btn=wrap?wrap.querySelector('.layer-swatch-btn'):null;
-  if(btn){ btn.style.background=c?c.code:'transparent'; btn.title=c?('Layer: '+c.name):'Layer: — none —'; }
+  if(btn){ btn.style.background=c?c.code:'transparent'; btn.dataset.tt=c?('Layer: '+c.name):'Layer: — none —'; }
   const list=document.getElementById('lsp-'+id);
   if(list){
-    list.querySelectorAll('.layer-swatch-opt').forEach(el=>el.classList.toggle('selected', el.title===name));
+    list.querySelectorAll('.layer-swatch-opt').forEach(el=>el.classList.toggle('selected', el.dataset.name===name));
     list.style.display='none';
   }
   if(wrap) wrap.dataset.value=name;

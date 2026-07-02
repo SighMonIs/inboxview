@@ -504,12 +504,24 @@ input[type=number]{-moz-appearance:textfield;}
 /* Custom colour layer swatches — sit inline next to the Colours dropdown */
 .opt-row-colour-inline{display:flex;align-items:center;gap:8px;flex:1;min-width:0;}
 .layer-swatch-wrap{position:relative;flex-shrink:0;}
-.layer-swatch-btn{width:24px;height:24px;border-radius:4px;border:1px solid var(--border2);cursor:pointer;transition:border-color 0.12s,transform 0.1s;padding:0;}
+.layer-swatch-btn{position:relative;width:24px;height:24px;border-radius:4px;border:1px solid var(--border2);cursor:pointer;transition:border-color 0.12s,transform 0.1s;padding:0;}
 .layer-swatch-btn:hover{border-color:var(--accent2);transform:scale(1.05);}
 .layer-swatch-picker{position:fixed;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,0.5);padding:6px;display:grid;grid-template-columns:repeat(6,24px);gap:4px;}
-.layer-swatch-opt{width:24px;height:24px;border-radius:4px;border:1px solid var(--border2);cursor:pointer;padding:0;transition:transform 0.1s,border-color 0.1s;}
+.layer-swatch-opt{position:relative;width:24px;height:24px;border-radius:4px;border:1px solid var(--border2);cursor:pointer;padding:0;transition:transform 0.1s,border-color 0.1s;}
 .layer-swatch-opt:hover{transform:scale(1.1);border-color:var(--accent2);}
 .layer-swatch-opt.selected{outline:2px solid var(--accent);outline-offset:1px;}
+
+/* Instant tooltip — replaces native title's hover delay */
+[data-tt]{overflow:visible;}
+[data-tt]::after{
+  content:attr(data-tt);
+  position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);
+  background:var(--bg);border:1px solid var(--border2);color:var(--text);
+  font-size:11px;font-weight:500;white-space:nowrap;padding:3px 7px;border-radius:4px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.4);
+  pointer-events:none;opacity:0;visibility:hidden;z-index:10000;
+}
+[data-tt]:hover::after{opacity:1;visibility:visible;}
 
 
 /* Custom colour picker dropdown */
