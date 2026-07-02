@@ -344,9 +344,9 @@ function renderUserCard(u, isCurrentUser){
       </div>
     </div>
     <div style="display:flex;gap:6px">
-      ${!hasSignedIn?`<button class="icon-btn" onclick="resendInvite('${esc(email)}',this)" title="Resend invite email"><i class="ti ti-mail-forward"></i></button>`:''}
-      <button class="icon-btn" onclick="openEditUserForm('${esc(u.id)}','${esc(email)}','${esc(name)}')" title="Edit"><i class="ti ti-edit"></i></button>
-      ${!isCurrentUser?`<button class="icon-btn del" onclick="deleteUser('${esc(u.id)}','${esc(name)}')" title="Delete"><i class="ti ti-trash"></i></button>`:''}
+      ${!hasSignedIn?`<button class="icon-btn" onclick="resendInvite('${escJsAttr(email)}',this)" title="Resend invite email"><i class="ti ti-mail-forward"></i></button>`:''}
+      <button class="icon-btn" onclick="openEditUserForm('${esc(u.id)}','${escJsAttr(email)}','${escJsAttr(name)}')" title="Edit"><i class="ti ti-edit"></i></button>
+      ${!isCurrentUser?`<button class="icon-btn del" onclick="deleteUser('${esc(u.id)}','${escJsAttr(name)}')" title="Delete"><i class="ti ti-trash"></i></button>`:''}
     </div>
   </div>`;
 }

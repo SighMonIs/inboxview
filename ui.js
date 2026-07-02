@@ -327,7 +327,7 @@ function buildColourPicker(id, selectedName, onChangeFn){
     <div class="colour-picker-list" id="cpl-${id}" style="display:none">
       <div class="cp-none" onclick="selectColour('${id}','',${onChangeFn})" >— none —</div>
       ${avail.map(c=>`
-        <div class="cp-option ${c.name===selectedName?'selected':''}" onclick="selectColour('${id}','${esc(c.name)}',${onChangeFn})">
+        <div class="cp-option ${c.name===selectedName?'selected':''}" onclick="selectColour('${id}','${escJsAttr(c.name)}',${onChangeFn})">
           <div class="cp-swatch" style="background:${esc(c.code)}"></div>
           <span>${esc(c.name)}</span>
         </div>`).join('')}
@@ -1293,11 +1293,11 @@ function _showInboxDetailFromData(orderId, rows) {
     return {name: p['Text']||'', backing: p['Backing']||'', colours: p['Colours']||''};
   });
   const bulkBadgeBtn = badgeRows.length
-    ? '<button class="btn sm" onclick="openBadgeBatchModal(' + JSON.stringify(batchItems) + ',\'' + esc(first.customer) + '\')"><i class="ti ti-badges"></i> ' + (badgeRows.length > 1 ? 'All Badges' : 'Badge') + '</button>'
+    ? '<button class="btn sm" onclick="openBadgeBatchModal(' + esc(JSON.stringify(batchItems)) + ',\'' + escJsAttr(first.customer) + '\')"><i class="ti ti-badges"></i> ' + (badgeRows.length > 1 ? 'All Badges' : 'Badge') + '</button>'
     : '';
 
   const printBtn = first.address
-    ? '<button class="icon-btn" style="margin-left:4px" onclick="printShippingLabel(\'' + esc(first.customer) + '\',\'' + esc(first.address) + '\',\'' + esc(String(orderId)) + '\')" title="Print label"><i class="ti ti-printer"></i></button>'
+    ? '<button class="icon-btn" style="margin-left:4px" onclick="printShippingLabel(\'' + escJsAttr(first.customer) + '\',\'' + escJsAttr(first.address) + '\',\'' + esc(String(orderId)) + '\')" title="Print label"><i class="ti ti-printer"></i></button>'
     : '';
 
   detailEl.innerHTML = '<div class="inbox-detail">'
