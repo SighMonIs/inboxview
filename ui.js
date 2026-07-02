@@ -1293,7 +1293,7 @@ function _showInboxDetailFromData(orderId, rows) {
     return {name: p['Text']||'', backing: p['Backing']||'', colours: p['Colours']||''};
   });
   const bulkBadgeBtn = badgeRows.length
-    ? '<button class="btn sm" onclick="openBadgeBatchModal(' + JSON.stringify(batchItems) + ',\'' + esc(first.customer) + '\')"><i class="ti ti-badges"></i> ' + (badgeRows.length > 1 ? 'All Badges' : 'Badge') + '</button>'
+    ? '<button class="btn sm" onclick="openBadgeBatchModal(' + esc(JSON.stringify(batchItems)) + ',\'' + escJsAttr(first.customer) + '\')"><i class="ti ti-badges"></i> ' + (badgeRows.length > 1 ? 'All Badges' : 'Badge') + '</button>'
     : '';
 
   const printBtn = first.address
