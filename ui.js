@@ -1709,7 +1709,7 @@ function _showSettingsDetail(catId) {
         + ' style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border)">'
         + (_deliveryReorderMode ? '<span class="opt-drag"><i class="ti ti-grip-vertical"></i></span>' : '')
         + '<div class="icon-picker-wrap">'
-        + '<button class="icon-picker-btn" onclick="event.stopPropagation();toggleDeliveryIconPicker(' + i + ')" title="Change icon" ' + (d.archived?'disabled':'') + '><i class="ti ' + (d.icon||'ti-truck-delivery') + '"></i></button>'
+        + '<button class="icon-picker-btn" onclick="event.stopPropagation();toggleDeliveryIconPicker(' + i + ',this)" title="Change icon" ' + (d.archived?'disabled':'') + '><i class="ti ' + (d.icon||'ti-truck-delivery') + '"></i></button>'
         + '<div class="icon-picker-list" id="dip-' + i + '" style="display:none">'
         + DELIVERY_ICON_PACK.map(function(ic){
             return '<button class="icon-picker-opt' + (ic===d.icon?' selected':'') + '" onclick="_settingsSetDeliveryIcon(' + i + ',\'' + ic + '\')" title="' + ic + '"><i class="ti ' + ic + '"></i></button>';
@@ -1741,7 +1741,7 @@ function _showSettingsDetail(catId) {
       + '</div>'
       + '<div id="deliveryAddForm" style="display:none;gap:8px;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;margin-bottom:10px">'
       + '<div class="icon-picker-wrap">'
-      + '<button class="icon-picker-btn" id="da-icon-btn" onclick="event.stopPropagation();toggleDeliveryIconPicker(\'new\')" title="Change icon"><i class="ti ' + _daNewIcon + '"></i></button>'
+      + '<button class="icon-picker-btn" id="da-icon-btn" onclick="event.stopPropagation();toggleDeliveryIconPicker(\'new\',this)" title="Change icon"><i class="ti ' + _daNewIcon + '"></i></button>'
       + '<div class="icon-picker-list" id="dip-new" style="display:none">'
       + DELIVERY_ICON_PACK.map(function(ic){
           return '<button class="icon-picker-opt' + (ic===_daNewIcon?' selected':'') + '" onclick="_settingsSetDeliveryIcon(\'new\',\'' + ic + '\')" title="' + ic + '"><i class="ti ' + ic + '"></i></button>';
@@ -1886,12 +1886,17 @@ function _settingsSetDeliveryPrice(i, val) {
   saveDeliveryOptions();
 }
 var _daNewIcon = 'ti-truck-delivery';
-function toggleDeliveryIconPicker(key) {
+function toggleDeliveryIconPicker(key, btn) {
   var list = document.getElementById('dip-' + key);
   if (!list) return;
   var isOpen = list.style.display !== 'none';
   document.querySelectorAll('.icon-picker-list').forEach(function(el){ el.style.display = 'none'; });
-  list.style.display = isOpen ? 'none' : 'grid';
+  if (isOpen) return;
+  var rect = btn.getBoundingClientRect();
+  var listWidth = 6 * 32 + 12;
+  list.style.left = Math.min(rect.left, window.innerWidth - listWidth - 8) + 'px';
+  list.style.top = (rect.bottom + 4) + 'px';
+  list.style.display = 'grid';
 }
 function _settingsSetDeliveryIcon(key, icon) {
   document.querySelectorAll('.icon-picker-list').forEach(function(el){ el.style.display = 'none'; });
