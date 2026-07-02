@@ -913,6 +913,7 @@ thead th.sortable{user-select:none;}
 
 /* ── Filter panel ── */
 .filter-wrap{position:relative;}
+.filter-wrap .sort-btn-main{border:none;}
 .filter-panel{
   position:fixed;
   background:var(--surface2);border:none;
