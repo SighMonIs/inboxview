@@ -1723,11 +1723,23 @@ function _showSettingsDetail(catId) {
       + '<div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:10px">'
       + '<button class="btn sm" onclick="_settingsAddDelivery()"><i class="ti ti-plus"></i> Add Method</button>'
       + '</div>'
+      + '<div id="deliveryAddForm" style="display:none;gap:8px;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;margin-bottom:10px">'
+      + '<input type="text" id="da-name" placeholder="Delivery method name&hellip;" onkeydown="if(event.key===\'Enter\')_settingsSaveDelivery()" style="flex:1;height:30px;padding:0 8px;font-size:12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg);color:var(--text);outline:none">'
+      + '<div class="cat-price-wrap"><span>$</span><input type="number" id="da-price" value="0" step="0.01" min="0" style="width:70px" onkeydown="if(event.key===\'Enter\')_settingsSaveDelivery()"></div>'
+      + '<button class="btn sm" onclick="_settingsCancelAddDelivery()">Cancel</button>'
+      + '<button class="btn sm primary" onclick="_settingsSaveDelivery()"><i class="ti ti-check"></i> Add</button>'
+      + '</div>'
       + '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:20px">' + deliveryRows + '</div>'
       + '<div class="settings-section-title" style="margin-bottom:6px">Payment</div>'
       + '<p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">Manage how customers pay. Enable <strong style="color:var(--text)">revenue</strong> on a method to include it in sales totals.</p>'
       + '<div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:10px">'
       + '<button class="btn sm" onclick="_settingsAddPayment()"><i class="ti ti-plus"></i> Add Option</button>'
+      + '</div>'
+      + '<div id="paymentAddForm" style="display:none;gap:8px;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;margin-bottom:10px">'
+      + '<input type="text" id="pa-name" placeholder="Payment option name&hellip;" onkeydown="if(event.key===\'Enter\')_settingsSavePayment()" style="flex:1;height:30px;padding:0 8px;font-size:12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg);color:var(--text);outline:none">'
+      + '<label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);white-space:nowrap;cursor:pointer"><input type="checkbox" id="pa-revenue" style="accent-color:var(--accent)"> Revenue</label>'
+      + '<button class="btn sm" onclick="_settingsCancelAddPayment()">Cancel</button>'
+      + '<button class="btn sm primary" onclick="_settingsSavePayment()"><i class="ti ti-check"></i> Add</button>'
       + '</div>'
       + '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden">' + rows + '</div>'
       + '</div>';
@@ -1822,10 +1834,19 @@ function _settingsToggleArchive(i) {
   _showSettingsDetail('payment');
 }
 function _settingsAddPayment() {
-  var name = prompt('Payment option name:');
-  if (!name || !name.trim()) return;
-  var isRevenue = confirm('Does this payment option generate revenue?');
-  paymentOptions.push({name:name.trim(), archived:false, showRevenue:isRevenue});
+  document.getElementById('pa-name').value = '';
+  document.getElementById('pa-revenue').checked = false;
+  document.getElementById('paymentAddForm').style.display = 'flex';
+  document.getElementById('pa-name').focus();
+}
+function _settingsCancelAddPayment() {
+  document.getElementById('paymentAddForm').style.display = 'none';
+}
+function _settingsSavePayment() {
+  var name = document.getElementById('pa-name').value.trim();
+  if (!name) return;
+  var isRevenue = document.getElementById('pa-revenue').checked;
+  paymentOptions.push({name:name, archived:false, showRevenue:isRevenue});
   savePaymentOptions();
   _showSettingsDetail('payment');
 }
@@ -1840,9 +1861,19 @@ function _settingsSetDeliveryPrice(i, val) {
   saveDeliveryOptions();
 }
 function _settingsAddDelivery() {
-  var name = prompt('Delivery method name:');
-  if (!name || !name.trim()) return;
-  deliveryOptions.push({name:name.trim(), archived:false, price:0});
+  document.getElementById('da-name').value = '';
+  document.getElementById('da-price').value = '0';
+  document.getElementById('deliveryAddForm').style.display = 'flex';
+  document.getElementById('da-name').focus();
+}
+function _settingsCancelAddDelivery() {
+  document.getElementById('deliveryAddForm').style.display = 'none';
+}
+function _settingsSaveDelivery() {
+  var name = document.getElementById('da-name').value.trim();
+  if (!name) return;
+  var price = parseFloat(document.getElementById('da-price').value) || 0;
+  deliveryOptions.push({name:name, archived:false, price:price});
   saveDeliveryOptions();
   _showSettingsDetail('payment');
 }
