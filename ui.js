@@ -257,13 +257,15 @@ function renderModelOpts(idx, catId, savedOpts){
           const key=combo.key;
           return `<option value="${esc(key)}" ${ddVal===key?'selected':''}>${esc(label)}</option>`;
         }).join('');
-        const selectHtml=`<select id="ov-${idx}-${opt.id}" onchange="colourOptChanged(${idx},'${opt.id}',this.value)">
+        const selectHtml=`<select id="ov-${idx}-${opt.id}" onchange="colourOptChanged(${idx},'${opt.id}',this.value)" style="flex:1;width:auto;min-width:0">
           <option value="">— select —</option>
-          <option value="Custom" ${ddVal==='Custom'?'selected':''}>✦ Custom (choose 4 colours)</option>
+          <option value="Custom" ${ddVal==='Custom'?'selected':''}>✦ Custom (choose ${numColours} colours)</option>
           ${savedCombos.length?`<optgroup label="── Saved combinations ──">${comboOptions}</optgroup>`:''}
         </select>`;
-        const rowHtml=`<div class="opt-row"><label>${esc(opt.name)}</label>${selectHtml}</div>`+
-          `<div class="opt-custom" id="ovc-${idx}-${opt.id}" data-iscolour="1" style="${ddVal==='Custom'?'':'display:none'}"></div>`;
+        const rowHtml=`<div class="opt-row"><label>${esc(opt.name)}</label>`+
+          `<div class="opt-row-colour-inline">${selectHtml}`+
+          `<div class="opt-custom" id="ovc-${idx}-${opt.id}" data-iscolour="1" style="${ddVal==='Custom'?'':'display:none'}"></div>`+
+          `</div></div>`;
         if(ddVal==='Custom') setTimeout(()=>renderLayerSelectors(idx,opt.id,customVal),0);
         else if(ddVal&&ddVal!=='Custom') setTimeout(()=>applyComboToLayers(idx,opt.id,ddVal),0);
         return rowHtml;
@@ -388,17 +390,53 @@ function renderLayerSelectors(idx, optId, savedVal){
   }
   const opt = opts.find(o=>String(o.id)===String(optId));
   const numLayers = opt?.num_colours || 4;
-  container.innerHTML=`<div class="layer-selectors" style="grid-template-columns:repeat(${numLayers},1fr)">
-    ${Array.from({length:numLayers},(_,i)=>i+1).map(n=>{
-      const pickerId=`lp-${idx}-${optId}-${n}`;
-      const savedName=saved['Layer '+n]||'';
-      const onChangeFn=`function(v){collectOpts(${idx});}`;
-      return`<div class="layer-sel-row">
-        <label>Layer ${n}</label>
-        ${buildColourPicker(pickerId, savedName, onChangeFn)}
-      </div>`;
-    }).join('')}
+  container.innerHTML = Array.from({length:numLayers},(_,i)=>i+1).map(n=>{
+    const pickerId=`lp-${idx}-${optId}-${n}`;
+    const savedName=saved['Layer '+n]||'';
+    const onChangeFn=`function(v){collectOpts(${idx});}`;
+    return buildLayerSwatch(pickerId, savedName, n, onChangeFn);
+  }).join('');
+}
+
+function buildLayerSwatch(id, selectedName, layerNum, onChangeFn){
+  const avail = availableColours();
+  const sel   = avail.find(c=>c.name===selectedName);
+  const swatchBg = sel ? sel.code : 'transparent';
+  const label    = sel ? sel.name : '— none —';
+  return `<div class="layer-swatch-wrap" id="cpw-${id}" data-value="${esc(selectedName||'')}">
+    <button type="button" class="layer-swatch-btn" style="background:${swatchBg}" title="Layer ${layerNum}: ${esc(label)}" onclick="event.stopPropagation();toggleLayerSwatchPicker('${id}',this)"></button>
+    <div class="layer-swatch-picker" id="lsp-${id}" style="display:none">
+      <button type="button" class="layer-swatch-opt" style="background:transparent;border-style:dashed" title="— none —" onclick="selectLayerSwatch('${id}','',${onChangeFn})"></button>
+      ${avail.map(c=>`<button type="button" class="layer-swatch-opt${c.name===selectedName?' selected':''}" style="background:${esc(c.code)}" title="${esc(c.name)}" onclick="selectLayerSwatch('${id}','${escJsAttr(c.name)}',${onChangeFn})"></button>`).join('')}
+    </div>
   </div>`;
+}
+
+function toggleLayerSwatchPicker(id, btn){
+  document.querySelectorAll('.layer-swatch-picker').forEach(el=>{ if(el.id!=='lsp-'+id) el.style.display='none'; });
+  const list=document.getElementById('lsp-'+id);
+  if(!list) return;
+  if(list.style.display!=='none'){ list.style.display='none'; return; }
+  const rect=btn.getBoundingClientRect();
+  const listWidth=6*28+12;
+  list.style.left=Math.min(rect.left, window.innerWidth-listWidth-8)+'px';
+  list.style.top=(rect.bottom+4)+'px';
+  list.style.display='grid';
+}
+
+function selectLayerSwatch(id, name, onChangeFn){
+  const avail=availableColours();
+  const c=avail.find(c=>c.name===name);
+  const wrap=document.getElementById('cpw-'+id);
+  const btn=wrap?wrap.querySelector('.layer-swatch-btn'):null;
+  if(btn){ btn.style.background=c?c.code:'transparent'; btn.title=c?('Layer: '+c.name):'Layer: — none —'; }
+  const list=document.getElementById('lsp-'+id);
+  if(list){
+    list.querySelectorAll('.layer-swatch-opt').forEach(el=>el.classList.toggle('selected', el.title===name));
+    list.style.display='none';
+  }
+  if(wrap) wrap.dataset.value=name;
+  if(typeof onChangeFn==='function') onChangeFn(name);
 }
 
 function getColourCode(name){
@@ -425,7 +463,8 @@ function collectOpts(idx){
         // Collect layer values as simple pipe-separated colour names
         const container=document.getElementById('ovc-'+idx+'-'+opt.id);
         if(container&&container.dataset.iscolour==='1'){
-          const layers=[1,2,3,4].map(n=>{
+          const numLayers=opt.num_colours||4;
+          const layers=Array.from({length:numLayers},(_,i)=>i+1).map(n=>{
             return getColourPickerValue('lp-'+idx+'-'+opt.id+'-'+n)||'';
           });
           val=layers.filter(Boolean).join('|');
