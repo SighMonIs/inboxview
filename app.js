@@ -126,6 +126,11 @@ function renderCatBlocks(){
                 </label>
               </div>`:''}
             </div>
+            <label class="opt-extra-label" title="Show this option in the item sort menu">
+              <input type="checkbox" ${o.sortable?'checked':''} onchange="opts[${globalIdx}].sortable=this.checked"
+                style="width:13px;height:13px;accent-color:var(--accent);cursor:pointer;margin:0">
+              Sort
+            </label>
             ${o.archived
               ? `<button class="icon-btn" onclick="unarchiveOpt(${globalIdx})" title="Unarchive"><i class="ti ti-archive-off"></i></button>`
               : usedOptKeys.has('${esc(c.id)}|'+o.name)
@@ -190,7 +195,7 @@ async function saveCatsAndOpts(){
   setStatus('spin','Saving…');closeCatModal();populateCatFilter();
   try{
     await sbReplace('categories', cats.map(c=>({id:c.id,name:c.name,price:c.price,archived:c.archived||false})));
-    await sbReplace('options', opts.map((o,i)=>({id:o.id,cat_id:o.catId,name:o.name,display:o.display,options:o.options,sort_order:i,num_colours:o.num_colours||4,force_caps:o.force_caps||false,multi_item:o.multi_item||false,archived:o.archived||false})));
+    await sbReplace('options', opts.map((o,i)=>({id:o.id,cat_id:o.catId,name:o.name,display:o.display,options:o.options,sort_order:i,num_colours:o.num_colours||4,force_caps:o.force_caps||false,multi_item:o.multi_item||false,sortable:o.sortable||false,archived:o.archived||false})));
     setStatus('ok','Saved');setTimeout(loadAll,500);
   }catch(e){setStatus('err','Failed: '+e.message);}
 }

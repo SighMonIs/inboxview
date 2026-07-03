@@ -525,6 +525,7 @@ function normaliseOpt(o){
     num_colours: Number(o.num_colours||4),
     force_caps:  Boolean(o.force_caps||false),
     multi_item:  Boolean(o.multi_item||false),
+    sortable:    Boolean(o.sortable||false),
     archived:    Boolean(o.archived||false)
   };
 }

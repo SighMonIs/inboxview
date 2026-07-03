@@ -1379,10 +1379,21 @@ function _showInboxDetailFromData(orderId, rows) {
     ? _detailCatNames.map(name => '<label class="filter-check"><input type="checkbox" data-detail-cat="' + esc(name) + '" checked onchange="_applyDetailFilters()"> ' + esc(name) + '</label>').join('')
     : '';
 
-  const sortPanelOpts = [
-    {f:'default', l:'Default order'}, {f:'cat', l:'Category'},
-    {f:'textval', l:'Name / Text'}, {f:'price', l:'Price'}, {f:'qty', l:'Qty'}
-  ].map(s => '<div class="sort-opt' + (s.f === 'default' ? ' active' : '') + '" data-detail-sort="' + s.f + '" onclick="_setDetailSort(\'' + s.f + '\')">' + s.l + '</div>').join('');
+  const _detailCatIds = [...new Set(rows.map(r => String(r.catId)))];
+  const _sortableOptNames = [...new Set(
+    opts.filter(o => _detailCatIds.includes(String(o.catId)) && o.sortable && !o.archived).map(o => o.name)
+  )];
+  const sortPanelOpts = '<div class="filter-section-title">Sort by</div>'
+    + [{f:'cat', l:'Category'}, {f:'qty', l:'Qty'}, {f:'price', l:'Price'}].map(s =>
+        '<div class="sort-option' + (window._itemSort === s.f ? ' active' : '') + '" data-detail-sort="' + s.f + '" onclick="_setDetailSort(\'' + s.f + '\',\'' + s.l + '\')">' + s.l + '</div>'
+      ).join('')
+    + (_sortableOptNames.length
+        ? '<div class="filter-section-title" style="margin-top:8px">Option</div>'
+          + _sortableOptNames.map(name => {
+              const key = 'opt:' + name;
+              return '<div class="sort-option indented' + (window._itemSort === key ? ' active' : '') + '" data-detail-sort="' + esc(key) + '" onclick="_setDetailSort(\'' + escJsAttr(key) + '\',\'' + escJsAttr(name) + '\')">' + esc(name) + '</div>';
+            }).join('')
+        : '');
 
   const itemsHtml = rows.map((row, _idx) => {
     const cat = cats.find(c => String(c.id) === String(row.catId));
@@ -1428,6 +1439,7 @@ function _showInboxDetailFromData(orderId, rows) {
       + ' data-price="' + row.total + '"'
       + ' data-qty="' + row.qty + '"'
       + ' data-textval="' + esc(parsedOpts['Text'] || '') + '"'
+      + ' data-optstr="' + esc(row.options || '') + '"'
       + ' data-idx="' + _idx + '">'
       + '<div class="inbox-item-left">'
       + '<div class="inbox-item-qty">' + row.qty + '</div>'
@@ -2156,6 +2168,7 @@ function _applyDetailFilters() {
         if(sort==='cat') return (a.dataset.catname||'').localeCompare(b.dataset.catname||'')*dir;
         if(sort==='price') return (parseFloat(a.dataset.price||0)-parseFloat(b.dataset.price||0))*dir;
         if(sort==='qty') return (parseInt(a.dataset.qty||0)-parseInt(b.dataset.qty||0))*dir;
+        if(sort.indexOf('opt:')===0) return _optValFromCard(a,sort.slice(4)).localeCompare(_optValFromCard(b,sort.slice(4)))*dir;
         return 0;
       });
   sorted.forEach(function(c){list.appendChild(c);});
@@ -2199,12 +2212,21 @@ function toggleDetailSortPanel(e) {
   p.style.display = '';
 }
 
-var _DETAIL_SORT_LABELS = {default:'Sort', cat:'Category', textval:'Name / Text', price:'Price', qty:'Qty'};
-function _setDetailSort(field) {
+function _optValFromCard(card, optName) {
+  var str = card.dataset.optstr || '';
+  var parts = str.split('||');
+  for (var i = 0; i < parts.length; i++) {
+    var idx = parts[i].indexOf(':');
+    if (idx >= 0 && parts[i].slice(0, idx).trim() === optName) return parts[i].slice(idx + 1).trim().toLowerCase();
+  }
+  return '';
+}
+
+function _setDetailSort(field, label) {
   window._itemSort = field;
   document.querySelectorAll('[data-detail-sort]').forEach(function(el){el.classList.toggle('active', el.dataset.detailSort === field);});
   var btn = document.getElementById('detailSortBtn');
-  if (btn) btn.innerHTML = '<i class="ti ti-arrows-sort"></i> ' + (_DETAIL_SORT_LABELS[field] || 'Sort');
+  if (btn) btn.innerHTML = '<i class="ti ti-arrows-sort"></i> ' + (label || 'Sort');
   var sp = document.getElementById('detailSortPanel');
   if (sp) sp.style.display = 'none';
   _applyDetailFilters();

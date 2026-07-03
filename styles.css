@@ -665,7 +665,7 @@ thead th.sortable{user-select:none;}
 .cat-price-wrap input:focus{border-color:var(--accent2);}
 .cat-opts-area{padding:8px 12px 10px 12px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px;}
 .cat-opts-area-empty{font-size:12px;color:var(--muted);font-style:italic;padding:4px 0;}
-.opt-item{display:grid;grid-template-columns:20px 1fr 180px 32px;gap:8px;align-items:center;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;cursor:default;}
+.opt-item{display:grid;grid-template-columns:20px 1fr 180px 50px 32px;gap:8px;align-items:center;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;cursor:default;}
 .opt-item.dragging{opacity:0.4;}
 .opt-item.drag-over{border-color:var(--accent2);background:rgba(232,213,163,0.05);}
 [draggable="true"].dragging{opacity:0.4;}
@@ -1025,6 +1025,7 @@ thead th.sortable{user-select:none;}
 .sort-option.active::before{
   content:'✓';font-size:11px;color:var(--accent);margin-right:2px;
 }
+.sort-option.indented{padding-left:20px;}
 
 /* ── Mobile order card — flight card layout ── */
 .mc-card{
