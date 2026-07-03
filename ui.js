@@ -1277,7 +1277,8 @@ function renderInboxList(list) {
   el.innerHTML = orderIds.map(oid => {
     const rows = orderMap.get(oid);
     const first = rows[0];
-    const total = rows.reduce((s, r) => s + r.total, 0);
+    const deliveryCost = deliveryOptions.find(d => d.name === first.delivery)?.price || 0;
+    const total = rows.reduce((s, r) => s + r.total, 0) + deliveryCost;
     const status = first.status || 'Pending';
     const blClass = 'bl-' + status.toLowerCase().replace(' ', '-');
     const isSelected = oid === String(_inboxSelectedOrderId);
@@ -1348,7 +1349,8 @@ function _showInboxDetailFromData(orderId, rows) {
   const first = rows[0];
   const status = first.status || 'Pending';
   const bc = 'b-' + status.toLowerCase().replace(' ', '-');
-  const total = rows.reduce((s, r) => s + r.total, 0);
+  const deliveryCost = deliveryOptions.find(d => d.name === first.delivery)?.price || 0;
+  const total = rows.reduce((s, r) => s + r.total, 0) + deliveryCost;
   const orderNum = orderNumFromId(orderId);
   const madeSet = buildMadeSet();
 
@@ -1636,7 +1638,13 @@ function _showCustomerDetail(customerId) {
   custOrders.forEach(function(r){if(!orderMap.has(r.orderId))orderMap.set(r.orderId,[]);orderMap.get(r.orderId).push(r);});
   var av = _avatarColor(c.name);
   var ini = _initials(c.name);
-  var totalSpend = custOrders.reduce(function(s,r){return s+r.total;},0);
+  var orderTotals = new Map();
+  orderIds.forEach(function(oid){
+    var rows = orderMap.get(oid);
+    var deliveryCost = deliveryOptions.find(function(d){return d.name===rows[0].delivery;})?.price||0;
+    orderTotals.set(oid, rows.reduce(function(s,r){return s+r.total;},0) + deliveryCost);
+  });
+  var totalSpend = [...orderTotals.values()].reduce(function(s,t){return s+t;},0);
   var html = '<div class="inbox-detail">'
     + '<div class="inbox-detail-header">'
     + '<div class="inbox-detail-header-top">'
@@ -1660,7 +1668,7 @@ function _showCustomerDetail(customerId) {
     orderIds.forEach(function(oid){
       var rows = orderMap.get(oid);
       var first = rows[0];
-      var total = rows.reduce(function(s,r){return s+r.total;},0);
+      var total = orderTotals.get(oid);
       var status = first.status||'Pending';
       var bc = 'b-'+status.toLowerCase().replace(' ','-');
       var orderNum = orderNumFromId(oid);
@@ -1727,7 +1735,15 @@ function _renderViewStats() {
   var pending = orders.filter(function(r){return (r.status||'Pending')==='Pending';});
   var printing = orders.filter(function(r){return r.status==='Printing';});
   var complete = orders.filter(function(r){return r.status==='Complete';});
-  var revenue = orders.filter(function(r){var p=paymentOptions.find(function(p){return p.name===r.payment;});return p&&p.showRevenue;}).reduce(function(s,r){return s+r.total;},0);
+  var revenueOrderIds = new Set();
+  var revenue = orders.filter(function(r){var p=paymentOptions.find(function(p){return p.name===r.payment;});return p&&p.showRevenue;}).reduce(function(s,r){
+    var deliveryCost = 0;
+    if(!revenueOrderIds.has(r.orderId)){
+      revenueOrderIds.add(r.orderId);
+      deliveryCost = deliveryOptions.find(function(d){return d.name===r.delivery;})?.price||0;
+    }
+    return s+r.total+deliveryCost;
+  },0);
   var uniqueOrders = new Set(orders.map(function(r){return r.orderId;})).size;
   var detail = document.getElementById('inboxDetail');
   if (detail) detail.innerHTML = '<div class="inbox-detail" style="max-width:600px">'
