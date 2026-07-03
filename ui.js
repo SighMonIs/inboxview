@@ -491,8 +491,8 @@ function addModelRow(d){
     <button type="button" class="rm-btn-corner" onclick="removeModel(this)" title="Remove Item"><i class="ti ti-trash"></i></button>
     <div class="model-row-top">
       <div class="opt-row"><label>Category</label><select id="mc-${idx}" onchange="catChanged(${idx})">${catOptions(d.catId)}</select></div>
-      <div class="mf"><label>Qty</label><input type="number" class="ns-init" id="mq-${idx}" value="${d.qty||1}" min="1" oninput="calcTotal()"></div>
-      <div class="mf"><label>Price (each)</label><div class="price-input-wrap"><span>$</span><input type="number" class="ns-init" id="mp-${idx}" value="${d.price?Number(d.price).toFixed(2):''}" step="0.01" min="0" placeholder="0.00" oninput="calcTotal()"></div></div>
+      <div class="prefix-input-wrap"><span>×</span><input type="number" class="ns-init" id="mq-${idx}" value="${d.qty||1}" min="1" oninput="calcTotal()"></div>
+      <div class="prefix-input-wrap"><span>$</span><input type="number" class="ns-init" id="mp-${idx}" value="${d.price?Number(d.price).toFixed(2):''}" step="0.01" min="0" placeholder="0.00" oninput="calcTotal()"></div>
       <div class="model-row-total"><label>Total</label><div class="total-val" id="mt-${idx}">—</div></div>
     </div>
     <div class="model-options" id="mo-${idx}"></div>
@@ -806,7 +806,7 @@ function validateOrder(){
     // Category required
     const catSel=document.getElementById('mc-'+idx);
     if(!catSel||!catSel.value){
-      catSel&&catSel.closest('.mf')&&catSel.closest('.mf').classList.add('field-error');
+      catSel&&catSel.closest('.opt-row')&&catSel.closest('.opt-row').classList.add('field-error');
       rowHasError=true;errors.push('cat-'+idx);
     }
 
@@ -814,7 +814,7 @@ function validateOrder(){
     const qtyEl=document.getElementById('mq-'+idx);
     const qty=parseInt(qtyEl?.value)||0;
     if(qty<=0){
-      qtyEl&&qtyEl.closest('.mf')&&qtyEl.closest('.mf').classList.add('field-error');
+      qtyEl&&qtyEl.closest('.prefix-input-wrap')&&qtyEl.closest('.prefix-input-wrap').classList.add('field-error');
       rowHasError=true;errors.push('qty-'+idx);
     }
 
