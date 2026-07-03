@@ -562,6 +562,9 @@ function calcTotal(){
     const rowTotalEl=document.getElementById('mt-'+i);
     if(rowTotalEl) rowTotalEl.textContent=price?'$'+rowTotal.toFixed(2):'—';
   });
+  const deliveryName=document.getElementById('f-delivery')?.value;
+  const deliveryOpt=deliveryOptions.find(d=>d.name===deliveryName);
+  if(deliveryOpt) t+=deliveryOpt.price;
   document.getElementById('orderTotal').textContent='$'+t.toFixed(2);
   _updateItemFilter();
 }
@@ -659,7 +662,7 @@ function _orderFormHtml(){
     + '</div>'
     + '<input type="hidden" id="f-customer-id">'
     + '</div>'
-    + '<div class="field"><label>Delivery type</label><select id="f-delivery"></select></div>'
+    + '<div class="field"><label>Delivery type</label><select id="f-delivery" onchange="calcTotal()"></select></div>'
     + '</div>'
     + '<div id="newCustomerPanel" style="display:none;background:rgba(92,184,122,0.06);border:1px solid rgba(92,184,122,0.25);border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:12px">'
     + '<div style="font-size:11px;font-weight:500;color:var(--green);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px"><i class="ti ti-user-plus" style="margin-right:6px"></i>New customer — add details</div>'
@@ -713,7 +716,7 @@ function openAddModal(){
   document.getElementById('addrTick').style.display='none';
   // Build delivery dropdown from config
   const fDelivery = document.getElementById('f-delivery');
-  fDelivery.innerHTML = getActiveDeliveryOptions().map(d=>`<option value="${esc(d.name)}">${esc(d.name)}</option>`).join('');
+  fDelivery.innerHTML = getActiveDeliveryOptions().map(d=>`<option value="${esc(d.name)}">${esc(d.name)} - $${d.price.toFixed(2)}</option>`).join('');
   fDelivery.value = getActiveDeliveryOptions()[0]?.name||'Post';
   // Build payment dropdown from config
   const fPayment = document.getElementById('f-payment');
@@ -746,7 +749,7 @@ function openEdit(orderId){
   if(first.address){document.getElementById('f-address').classList.add('validated');document.getElementById('addrTick').style.display='';}
   else{document.getElementById('f-address').classList.remove('validated');document.getElementById('addrTick').style.display='none';}
   const fDelivery2 = document.getElementById('f-delivery');
-  fDelivery2.innerHTML = getActiveDeliveryOptions().map(d=>`<option value="${esc(d.name)}">${esc(d.name)}</option>`).join('');
+  fDelivery2.innerHTML = getActiveDeliveryOptions().map(d=>`<option value="${esc(d.name)}">${esc(d.name)} - $${d.price.toFixed(2)}</option>`).join('');
   fDelivery2.value = first.delivery||getActiveDeliveryOptions()[0]?.name||'Post';
   const fPayment2 = document.getElementById('f-payment');
   fPayment2.innerHTML = getActivePaymentOptions().map(p=>`<option value="${esc(p.name)}">${esc(p.name)}</option>`).join('');
