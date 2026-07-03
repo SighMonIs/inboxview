@@ -496,7 +496,7 @@ function addModelRow(d){
       <div class="model-row-total"><label>Total</label><div class="total-val" id="mt-${idx}">—</div></div>
     </div>
     <div class="model-options" id="mo-${idx}"></div>
-    <div class="model-notes-row">
+    <div class="opt-row" style="margin-top:4px">
       <label>Notes</label>
       <input type="text" id="mn-${idx}" value="${esc(d.notes||'')}" placeholder="Item notes (colour, material, special requests…)">
     </div>
