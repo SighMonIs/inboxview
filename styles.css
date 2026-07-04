@@ -1,4 +1,6 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+button:focus{outline:none;}
+button:focus-visible{outline:2px solid var(--accent2);outline-offset:1px;}
 :root{--base:#1A1830;}
 
 /* ── Centered app shell ──────────────────────────────────── */
@@ -389,10 +391,8 @@ tbody tr.note-inline-row + tr td{border-top:1px solid var(--border);}
 .model-row{position:relative;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;overflow:visible;}
 .rm-btn-corner{position:absolute;top:1px;right:1px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:0 var(--radius) 0 var(--radius);border:1px solid rgba(224,92,92,0.5);background:rgba(224,92,92,0.08);color:var(--red);cursor:pointer;font-size:14px;transition:all 0.12s;z-index:1;}
 .rm-btn-corner:hover{background:rgba(224,92,92,0.18);border-color:rgba(224,92,92,0.8);}
-.model-row-top{display:grid;grid-template-columns:1fr 36px 90px 64px;gap:6px;align-items:center;padding-right:32px;}
-.model-row-total{display:flex;flex-direction:column;}
-.model-row-total label{display:block;font-size:10px;color:var(--muted);margin-bottom:2px;text-transform:uppercase;letter-spacing:0.4px;}
-.model-row-total .total-val{height:28px;display:flex;align-items:center;justify-content:flex-end;font-size:13px;font-weight:600;color:var(--text);padding-right:2px;}
+.model-row-top{display:grid;grid-template-columns:1fr 36px 90px;gap:6px;align-items:center;padding-right:32px;}
+.total-val{font-size:14px;font-weight:700;color:var(--text);flex-shrink:0;white-space:nowrap;}
 .prefix-input-wrap{display:flex;align-items:center;gap:4px;height:28px;padding:0 8px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg);}
 .prefix-input-wrap:focus-within{border-color:var(--accent2);}
 .prefix-input-wrap.field-error{border-color:var(--red)!important;}
@@ -636,7 +636,6 @@ thead th.sortable{user-select:none;}
   .field-row{grid-template-columns:1fr;}
   .model-row-top{grid-template-columns:1fr 1fr;}
   .model-row-top .opt-row:first-child{grid-column:1 / -1;}
-  .model-row-total{display:none;}
   .opt-block-top{grid-template-columns:1fr 1fr;}
   .opt-block-top span{display:none;}
   input,select,textarea{font-size:16px!important;}

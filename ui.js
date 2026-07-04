@@ -493,12 +493,14 @@ function addModelRow(d){
       <div class="opt-row"><label>Category</label><select id="mc-${idx}" onchange="catChanged(${idx})">${catOptions(d.catId)}</select></div>
       <div class="prefix-input-wrap"><span>×</span><input type="number" class="ns-init" id="mq-${idx}" value="${d.qty||1}" min="1" oninput="calcTotal()"></div>
       <div class="prefix-input-wrap"><span>$</span><input type="number" class="ns-init" id="mp-${idx}" value="${d.price?Number(d.price).toFixed(2):''}" step="0.01" min="0" placeholder="0.00" oninput="calcTotal()"></div>
-      <div class="model-row-total"><label>Total</label><div class="total-val" id="mt-${idx}">—</div></div>
     </div>
     <div class="model-options" id="mo-${idx}"></div>
     <div class="opt-row" style="margin-top:4px">
       <label>Notes</label>
-      <input type="text" id="mn-${idx}" value="${esc(d.notes||'')}" placeholder="Item notes (colour, material, special requests…)">
+      <div style="display:flex;gap:8px;align-items:center;min-width:0">
+        <input type="text" id="mn-${idx}" value="${esc(d.notes||'')}" placeholder="Item notes (colour, material, special requests…)" style="flex:1;width:auto;min-width:0">
+        <div class="total-val" id="mt-${idx}">—</div>
+      </div>
     </div>
     <input type="hidden" id="mm-${idx}" value="${esc(d.model||'')}">
     <input type="hidden" id="opts-${idx}" value="${esc(d.options||'')}">`;
