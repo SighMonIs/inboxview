@@ -1286,6 +1286,13 @@ async function saveColours(){
 }
 
 // ── Settings ───────────────────────────────────────────────
+function loadStylish(){
+  applyStylish(localStorage.getItem('pd_stylish')!=='false', false);
+}
+function applyStylish(on, save=true){
+  document.documentElement.classList.toggle('flat-ui', !on);
+  if(save) localStorage.setItem('pd_stylish', String(on));
+}
 function loadAccent(){
   const s=localStorage.getItem('pd_accent');
   if(s){try{const p=JSON.parse(s);applyAccent(p.a,p.a2,false);}catch(e){}}
@@ -1401,6 +1408,7 @@ function openSettings(){
   document.getElementById('settingsPassword').value='';
   document.getElementById('settingsPasswordConfirm').value='';
   document.getElementById('settingsPasswordError').style.display='none';
+  document.getElementById('settingsStylish').checked = localStorage.getItem('pd_stylish')!=='false';
   buildAccentSwatches();
   const s=localStorage.getItem('pd_accent');
   if(s){try{document.getElementById('customColour').value=JSON.parse(s).a;}catch(e){}}
@@ -1554,6 +1562,7 @@ document.addEventListener('click', e=>{
 
 // ── Boot ───────────────────────────────────────────────────
 loadAccent();
+loadStylish();
 
 document.getElementById('setupBanner').style.display='none';
 // Check for existing session

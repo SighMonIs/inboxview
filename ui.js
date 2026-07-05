@@ -1962,6 +1962,16 @@ function _showSettingsDetail(catId) {
       + '<div id="settingsPasswordError" style="font-size:11px;color:var(--red);margin-top:4px;display:none"></div>'
       + '</div>'
 
+      + '<div class="settings-section"><div class="settings-section-title">Appearance</div>'
+      + '<div style="background:var(--surface2);border-radius:var(--radius-lg);padding:10px 14px">'
+      + '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:4px">'
+      + '<input type="checkbox" id="settingsStylish" onchange="applyStylish(this.checked)" style="accent-color:var(--accent);width:14px;height:14px">'
+      + '<span style="font-size:12px;font-weight:500">Stylish</span>'
+      + '</label>'
+      + '<div style="font-size:11px;color:var(--muted);padding-left:22px">Rounded 3D item cards. Turn off for a flat, plain table view.</div>'
+      + '</div>'
+      + '</div>'
+
       + '<div class="settings-section"><div class="settings-section-title">Accent colour</div>'
       + '<div class="field"><label>Choose from your filament colours</label>'
       + '<div class="colour-picker-wrap" id="accentPickerWrap">'
@@ -2015,6 +2025,7 @@ function _showSettingsDetail(catId) {
       document.getElementById('settingsPassword').value = '';
       document.getElementById('settingsPasswordConfirm').value = '';
       document.getElementById('settingsPasswordError').style.display = 'none';
+      document.getElementById('settingsStylish').checked = localStorage.getItem('pd_stylish')!=='false';
       if(typeof buildAccentSwatches==='function') buildAccentSwatches();
       var s = localStorage.getItem('pd_accent');
       if(s){try{document.getElementById('customColour').value=JSON.parse(s).a;}catch(e){}}

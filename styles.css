@@ -1072,3 +1072,12 @@ thead th.sortable{user-select:none;}
 .mc-stat-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;}
 .mc-stat-val{font-size:13px;font-weight:600;color:var(--text);}
 .mc-stat-sep{width:1px;height:22px;background:var(--border);flex-shrink:0;}
+
+/* ── Flat mode ("Stylish" off): strip 3D chrome, plain table-like rows ── */
+html.flat-ui{--radius:2px;--radius-lg:2px;--ctrl-shadow:none;--ctrl-shadow-hover:none;--ctrl-shadow-active:none;}
+html.flat-ui *{box-shadow:none!important;}
+html.flat-ui .inbox-items-list{gap:0;}
+html.flat-ui .inbox-item-card{background:transparent;border:none;border-bottom:1px solid var(--border);border-radius:0;}
+html.flat-ui .inbox-item-card:hover{background:var(--surface2);}
+html.flat-ui .inbox-detail-meta,
+html.flat-ui .inbox-detail-total{background:transparent;border:none;border-top:1px solid var(--border);border-bottom:1px solid var(--border);border-radius:0;}
