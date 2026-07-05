@@ -1565,11 +1565,16 @@ loadAccent();
 loadStylish();
 
 document.getElementById('setupBanner').style.display='none';
-// Check for existing session
-restoreSession().then(ok=>{
-  if(ok){ showApp(); }
-  else{
-    document.getElementById('loginScreen').style.display='flex';
-    document.getElementById('mainApp').style.display='none';
-  }
-});
+if(DEV_MODE){
+  currentUser = {id:'dev-user', email:'dev@example.com', user_metadata:{display_name:'Dev User'}};
+  showApp();
+} else {
+  // Check for existing session
+  restoreSession().then(ok=>{
+    if(ok){ showApp(); }
+    else{
+      document.getElementById('loginScreen').style.display='flex';
+      document.getElementById('mainApp').style.display='none';
+    }
+  });
+}

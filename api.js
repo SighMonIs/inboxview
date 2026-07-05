@@ -448,8 +448,66 @@ function saveSupabaseConfig(){
   loadAll();
 }
 
+// ── Dev mode (localhost only): skip login + Supabase, use fixture data ──
+const DEV_MODE = ['localhost','127.0.0.1'].includes(location.hostname);
+
+const DEV_FIXTURES = {
+  categories: [
+    {id:'C0001', name:'Name Badge',    price:8},
+    {id:'C0002', name:'Keychain',      price:10},
+    {id:'C0003', name:'Coaster',       price:12},
+    {id:'C0004', name:'Fridge Magnet', price:6}
+  ],
+  options: [
+    {id:'O0001', cat_id:'C0001', name:'Text',    display:'text'},
+    {id:'O0002', cat_id:'C0001', name:'Backing', display:'text'},
+    {id:'O0003', cat_id:'C0001', name:'Colours', display:'colour'},
+    {id:'O0004', cat_id:'C0002', name:'Text',    display:'text'},
+    {id:'O0005', cat_id:'C0002', name:'Backing', display:'text'},
+    {id:'O0006', cat_id:'C0002', name:'Colours', display:'colour'},
+    {id:'O0007', cat_id:'C0003', name:'Colour',  display:'colour'},
+    {id:'O0008', cat_id:'C0004', name:'Colour',  display:'colour'}
+  ],
+  colours: [
+    {id:'COL0001', name:'Red',   code:'#e05c5c', available:true},
+    {id:'COL0002', name:'Blue',  code:'#5b9cf6', available:true},
+    {id:'COL0003', name:'Black', code:'#1a1a1a', available:true},
+    {id:'COL0004', name:'White', code:'#f2f2f2', available:true},
+    {id:'COL0005', name:'Gold',  code:'#e8d5a3', available:true},
+    {id:'COL0006', name:'Green', code:'#5cb87a', available:true}
+  ],
+  customers: [
+    {id:'CUST0001', name:'Kevin Evans',  email:'kevin@example.com',  phone:'0400 111 222', address:'12 Example St, Sydney NSW'},
+    {id:'CUST0002', name:'Mel Hutchin',  email:'mel@example.com',    phone:'0400 222 333', address:'8 Sample Ave, Melbourne VIC'},
+    {id:'CUST0003', name:'Donna Mee',    email:'donna@example.com',  phone:'0400 333 444', address:'21 Demo Rd, Brisbane QLD'},
+    {id:'CUST0004', name:'Alex Chen',    email:'alex@example.com',   phone:'0400 444 555', address:'5 Test Ct, Perth WA'},
+    {id:'CUST0005', name:'Priya Singh',  email:'priya@example.com',  phone:'0400 555 666', address:'40 Mock Ln, Adelaide SA'}
+  ],
+  orders: [
+    {id:'1', order_id:'O0000000001', customer:'Kevin Evans', customer_id:'CUST0001', address:'12 Example St, Sydney NSW', delivery:'Express Post', payment:'Card', cat_id:'C0001', qty:42, price:8,  total:336, status:'Complete', date:'2026-07-01', options:'Text:Kevin||Backing:Pin||Colours:Gold'},
+    {id:'2', order_id:'O0000000001', customer:'Kevin Evans', customer_id:'CUST0001', address:'12 Example St, Sydney NSW', delivery:'Express Post', payment:'Card', cat_id:'C0002', qty:1,  price:10, total:10,  status:'Complete', date:'2026-07-01', options:'Text:Kevin||Backing:Keychain||Colours:Black'},
+    {id:'3', order_id:'O0000000002', customer:'Mel Hutchin',  customer_id:'CUST0002', address:'8 Sample Ave, Melbourne VIC', delivery:'Pick Up', payment:'Cash', cat_id:'C0001', qty:2,  price:10, total:20,  status:'Complete', date:'2026-07-02', options:'Text:Mel||Backing:Magnet||Colours:Blue'},
+    {id:'4', order_id:'O0000000003', customer:'Donna Mee',    customer_id:'CUST0003', address:'21 Demo Rd, Brisbane QLD', delivery:'Post', payment:'No', cat_id:'C0001', qty:20, price:10, total:200, status:'Pending', date:'2026-07-03', notes:'Call before delivery', options:'Text:Donna||Backing:Pin||Colours:Red'},
+    {id:'5', order_id:'O0000000004', customer:'Alex Chen',    customer_id:'CUST0004', address:'5 Test Ct, Perth WA', delivery:'Post', payment:'Card', cat_id:'C0003', qty:4,  price:12, total:48,  status:'Printing', date:'2026-07-04', options:'Colour:Red'},
+    {id:'6', order_id:'O0000000005', customer:'Priya Singh',  customer_id:'CUST0005', address:'40 Mock Ln, Adelaide SA', delivery:'Pick Up', payment:'Card', cat_id:'C0004', qty:6,  price:6,  total:36,  status:'On Hold', date:'2026-07-04', options:'Colour:Green'},
+    {id:'7', order_id:'O0000000005', customer:'Priya Singh',  customer_id:'CUST0005', address:'40 Mock Ln, Adelaide SA', delivery:'Pick Up', payment:'Card', cat_id:'C0003', qty:2,  price:12, total:24,  status:'On Hold', date:'2026-07-04', options:'Colour:White'},
+    {id:'8', order_id:'O0000000006', customer:'Kevin Evans', customer_id:'CUST0001', address:'12 Example St, Sydney NSW', delivery:'Post', payment:'Card', cat_id:'C0002', qty:3,  price:10, total:30,  status:'Cancelled', date:'2026-06-28', options:'Text:Test||Backing:Keychain||Colours:Black'}
+  ]
+};
+
 // ── Load ───────────────────────────────────────────────────
 async function loadAll(){
+  if(DEV_MODE){
+    cats      = DEV_FIXTURES.categories.map(normaliseCat);
+    opts      = DEV_FIXTURES.options.map(normaliseOpt);
+    colours   = DEV_FIXTURES.colours.map(normaliseColour);
+    customers = DEV_FIXTURES.customers.map(normaliseCustomer);
+    orders    = DEV_FIXTURES.orders.map(normalise);
+    populateCatFilter();
+    renderTable();
+    setStatus('ok','Connected (dev fixtures)');
+    return;
+  }
   const sbUrl2 = getCfg('SUPABASE_URL');
   const sbKey  = getCfg('SUPABASE_KEY');
   if(!sbUrl2||!sbKey){
