@@ -409,7 +409,10 @@ async function sbGet(table, query){
 
 async function sbUpsert(table, row){
   if(DEV_MODE) return Array.isArray(row)?row:[row]; // in-memory fixtures only — no real backend to write to
-  const res = await sbFetch(sbUrl(table), {
+  // on_conflict=id is required for partial-column payloads (e.g. {id, paid}) — without it,
+  // PostgREST can fail to match the existing row and falls through to an INSERT, which then
+  // fails on whatever NOT NULL columns weren't included in the partial payload.
+  const res = await sbFetch(sbUrl(table, '?on_conflict=id'), {
     method: 'POST',
     headers: { ...SB_HEADERS(), 'Prefer': 'resolution=merge-duplicates,return=representation' },
     body: JSON.stringify(row)
