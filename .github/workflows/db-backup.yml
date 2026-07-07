@@ -22,7 +22,10 @@ jobs:
         env:
           DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
-          pg_dump "$DB_URL" --no-owner --no-privileges --format=plain -f backup.sql
+          # ubuntu-latest ships an older pg_dump on PATH already wired up via
+          # update-alternatives, which doesn't get bumped by just installing
+          # postgresql-client-17 — call the v17 binary directly instead.
+          /usr/lib/postgresql/17/bin/pg_dump "$DB_URL" --no-owner --no-privileges --format=plain -f backup.sql
           gzip backup.sql
 
       - name: Set backup date
