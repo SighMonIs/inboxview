@@ -443,6 +443,7 @@ async function sbDelete(table, filter){
 }
 
 async function sbReplace(table, rows){
+  if(DEV_MODE) return rows; // in-memory fixtures only — no real backend to write to
   // Safe replace: upsert all rows first, then delete any that are no longer present
   // This avoids data loss if the insert fails after a delete
   if(rows.length){
@@ -511,7 +512,7 @@ const DEV_FIXTURES = {
     {id:'CUST0002', name:'Mel Hutchin',  email:'mel@example.com',    phone:'0400 222 333', address:'8 Sample Ave, Melbourne VIC'},
     {id:'CUST0003', name:'Donna Mee',    email:'donna@example.com',  phone:'0400 333 444', address:'21 Demo Rd, Brisbane QLD'},
     {id:'CUST0004', name:'Alex Chen',    email:'alex@example.com',   phone:'0400 444 555', address:'5 Test Ct, Perth WA'},
-    {id:'CUST0005', name:'Priya Singh',  email:'priya@example.com',  phone:'0400 555 666', address:'40 Mock Ln, Adelaide SA'}
+    {id:'CUST0005', name:'Priya Singh',  email:'priya@example.com',  phone:'0400 555 666', address:'40 Mock Ln, Adelaide SA', archived:true}
   ],
   orders: [
     {id:'1', order_id:'O0000000001', customer:'Kevin Evans', customer_id:'CUST0001', address:'12 Example St, Sydney NSW', delivery:'Express Post', payment:'Card', cat_id:'C0001', qty:42, price:8,  total:336, status:'Complete', date:'2026-07-01', options:'Text:Kevin||Backing:Pin||Colours:Gold', printed:true, paid:true, inv_consumed:true},
@@ -616,12 +617,13 @@ function normalise(o){
 
 function normaliseCustomer(c){
   return{
-    id:      String(c.id||''),
-    name:    String(c.name||''),
-    email:   String(c.email||''),
-    phone:   String(c.phone||''),
-    address: String(c.address||''),
-    notes:   String(c.notes||'')
+    id:       String(c.id||''),
+    name:     String(c.name||''),
+    email:    String(c.email||''),
+    phone:    String(c.phone||''),
+    address:  String(c.address||''),
+    notes:    String(c.notes||''),
+    archived: Boolean(c.archived||false)
   };
 }
 function normaliseCat(c){

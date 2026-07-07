@@ -109,7 +109,7 @@ body{overflow:hidden;background:var(--base);margin:0;padding:0;}
 .inbox-card-item-line{display:flex;align-items:baseline;gap:4px;}
 .inbox-card-item-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
 .inbox-card-item-qty{flex-shrink:0;color:var(--muted);}
-.inbox-card-paid{font-size:12px;font-weight:600;flex-shrink:0;}
+.inbox-card-paid{font-size:12px;font-weight:600;flex-shrink:0;margin-left:auto;}
 .inbox-card-status{
   font-size:9px;font-weight:700;padding:2px 6px;border-radius:10px;
   text-transform:uppercase;letter-spacing:0.4px;

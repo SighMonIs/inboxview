@@ -1704,10 +1704,15 @@ function _renderViewCustomers(filter) {
     return !q || c.name.toLowerCase().includes(q) || (c.email||'').toLowerCase().includes(q);
   });
   if (!shown.length) { list.innerHTML = '<div class="inbox-empty-state"><i class="ti ti-users"></i> No customers</div>'; return; }
+  shown.sort(function(a,b){ return (a.archived?1:0) - (b.archived?1:0); });
   list.innerHTML = shown.map(function(c) {
+    var isSelected = String(c.id) === String(_selectedCustomerId);
+    if (c.archived) {
+      return '<div class="inbox-card' + (isSelected?' selected':'') + '" onclick="_showCustomerDetail(\'' + esc(String(c.id)) + '\')">'
+        + '<div class="inbox-card-content"><span class="text-muted strikethrough">' + esc(c.name) + '</span></div></div>';
+    }
     var ordSet = new Set(orders.filter(function(r) { return String(r.customer_id)===String(c.id)||r.customer===c.name; }).map(function(r){return r.orderId;}));
     var ordCount = ordSet.size;
-    var isSelected = String(c.id) === String(_selectedCustomerId);
     var av = _avatarColor(c.name);
     var ini = _initials(c.name);
     return '<div class="inbox-card' + (isSelected?' selected':'') + '" onclick="_showCustomerDetail(\'' + esc(String(c.id)) + '\')">'
@@ -1751,7 +1756,9 @@ function _showCustomerDetail(customerId) {
     + (c.email?'<div class="customer-email-sub">'+esc(c.email)+'</div>':'')
     + '</div>'
     + '<button class="sort-btn-main" onclick="openEditCustomer(\''+esc(String(c.id))+'\')"><i class="ti ti-edit"></i> Edit</button>'
-    + '<button class="sort-btn-main text-red" onclick="deleteCustomer(\''+esc(String(c.id))+'\',\''+escJsAttr(c.name)+'\')" title="Delete customer"><i class="ti ti-trash"></i></button>'
+    + (orderIds.length
+        ? '<button class="sort-btn-main" onclick="'+(c.archived?'unarchiveCustomer(\''+esc(String(c.id))+'\')':'archiveCustomer(\''+esc(String(c.id))+'\',\''+escJsAttr(c.name)+'\')')+'" title="'+(c.archived?'Restore customer':'Archive customer')+'"><i class="ti ti-'+(c.archived?'archive-off':'archive')+'"></i></button>'
+        : '<button class="sort-btn-main text-red" onclick="deleteCustomer(\''+esc(String(c.id))+'\',\''+escJsAttr(c.name)+'\')" title="Delete customer"><i class="ti ti-trash"></i></button>')
     + '</div></div>'
     + '<div class="inbox-detail-meta">'
     + (c.phone?'<div class="inbox-detail-meta-item"><i class="ti ti-phone"></i><strong>'+esc(c.phone)+'</strong></div>':'')
@@ -1987,6 +1994,8 @@ function _statCard(label, val, icon, color) {
 var _selectedSettingsCat = null;
 var _deliveryReorderMode = false;
 var _paymentReorderMode = false;
+var _showArchivedDelivery = false;
+var _showArchivedPayment = false;
 var _SETTINGS_CATS = [
   {id:'payment',  icon:'ti-credit-card', title:'Post & Pay',           desc:'Manage delivery methods and payment methods'},
   {id:'cats',     icon:'ti-category',    title:'Categories & Options',  desc:'Product categories and their options'},
@@ -2074,7 +2083,9 @@ function _showSettingsDetail(catId) {
       + '</div>';
     if(typeof loadUsers === 'function') { window.editingUserId = null; loadUsers(); }
   } else if (catId === 'payment') {
-    var deliveryRows = deliveryOptions.map(function(d, i) {
+    var visibleDelivery = _showArchivedDelivery ? deliveryOptions : deliveryOptions.filter(function(d){return !d.archived;});
+    var deliveryRows = visibleDelivery.map(function(d) {
+      var i = deliveryOptions.indexOf(d);
       return '<div' + (_deliveryReorderMode ? ' draggable="true" ondragstart="_reorderDragStart(event,\'delivery\',' + i + ')" ondragover="_reorderDragOver(event,\'delivery\',' + i + ')" ondrop="_reorderDrop(event,\'delivery\',' + i + ')" ondragleave="_reorderDragLeave(event)" ondragend="_reorderDragEnd(event)"' : '')
         + ' class="settings-list-row">'
         + (_deliveryReorderMode ? '<span class="opt-drag"><i class="ti ti-grip-vertical"></i></span>' : '')
@@ -2088,17 +2099,19 @@ function _showSettingsDetail(catId) {
         + '</div>'
         + '<span class="settings-list-name' + (_deliveryReorderMode?' reorder-indent':'') + (d.archived?' text-muted strikethrough':'') + '">' + esc(d.name) + '</span>'
         + '<div class="cat-price-wrap"><span>$</span><input type="number" class="ns-init" value="' + d.price.toFixed(2) + '" step="0.01" min="0" ' + (d.archived?'disabled':'') + ' onchange="_settingsSetDeliveryPrice(' + i + ',this.value)"></div>'
-        + '<button class="btn sm" onclick="_settingsToggleDeliveryArchive(' + i + ')" title="' + (d.archived?'Restore':'Archive') + '"><i class="ti ti-' + (d.archived?'eye':'eye-off') + '"></i></button>'
+        + '<button class="btn sm" onclick="_settingsToggleDeliveryArchive(' + i + ')" title="' + (d.archived?'Restore':'Archive') + '"><i class="ti ti-' + (d.archived?'archive-off':'archive') + '"></i></button>'
         + '</div>';
     }).join('');
-    var rows = paymentOptions.map(function(p, i) {
+    var visiblePayment = _showArchivedPayment ? paymentOptions : paymentOptions.filter(function(p){return !p.archived;});
+    var rows = visiblePayment.map(function(p) {
+      var i = paymentOptions.indexOf(p);
       return '<div' + (_paymentReorderMode ? ' draggable="true" ondragstart="_reorderDragStart(event,\'payment\',' + i + ')" ondragover="_reorderDragOver(event,\'payment\',' + i + ')" ondrop="_reorderDrop(event,\'payment\',' + i + ')" ondragleave="_reorderDragLeave(event)" ondragend="_reorderDragEnd(event)"' : '')
         + ' class="settings-list-row">'
         + (_paymentReorderMode ? '<span class="opt-drag"><i class="ti ti-grip-vertical"></i></span>' : '')
         + '<span class="settings-list-name' + (_paymentReorderMode?' reorder-indent':'') + (p.archived?' text-muted strikethrough':'') + '">' + esc(p.name) + '</span>'
         + '<span class="revenue-badge">' + (p.showRevenue?'revenue':'no revenue') + '</span>'
         + '<button class="btn sm" onclick="_settingsToggleRevenue(' + i + ')" title="Toggle revenue tracking"><i class="ti ti-currency-dollar"></i></button>'
-        + '<button class="btn sm" onclick="_settingsToggleArchive(' + i + ')" title="' + (p.archived?'Restore':'Archive') + '"><i class="ti ti-' + (p.archived?'eye':'eye-off') + '"></i></button>'
+        + '<button class="btn sm" onclick="_settingsToggleArchive(' + i + ')" title="' + (p.archived?'Restore':'Archive') + '"><i class="ti ti-' + (p.archived?'archive-off':'archive') + '"></i></button>'
         + '</div>';
     }).join('');
     detail.innerHTML = '<div class="inbox-detail">'
@@ -2107,8 +2120,10 @@ function _showSettingsDetail(catId) {
       + '<p class="settings-desc-text">Manage how orders are delivered, and the price for each method.</p>'
       + '<div class="settings-section-header-row">'
       + '<button class="btn sm' + (_deliveryReorderMode?' primary':'') + '" onclick="_toggleDeliveryReorder()"><i class="ti ti-arrows-sort"></i> ' + (_deliveryReorderMode?'Done':'Reorder') + '</button>'
+      + '<div style="display:flex;gap:8px">'
+      + '<button class="btn sm' + (_showArchivedDelivery?' primary':'') + '" onclick="_toggleShowArchivedDelivery()"><i class="ti ti-' + (_showArchivedDelivery?'eye-off':'eye') + '"></i> ' + (_showArchivedDelivery?'Hide archived':'Show archived') + '</button>'
       + '<button class="btn success sm" onclick="_settingsAddDelivery()"><i class="ti ti-plus"></i> Add Method</button>'
-      + '</div>'
+      + '</div></div>'
       + '<div id="deliveryAddForm" class="settings-add-form-row" style="display:none">'
       + '<div class="icon-picker-wrap">'
       + '<button class="icon-picker-btn" id="da-icon-btn" onclick="event.stopPropagation();toggleDeliveryIconPicker(\'new\',this)" title="Change icon"><i class="ti ' + _daNewIcon + '"></i></button>'
@@ -2128,8 +2143,10 @@ function _showSettingsDetail(catId) {
       + '<p class="settings-desc-text">Manage how customers pay. Enable <strong class="text-emphasis">revenue</strong> on a method to include it in sales totals.</p>'
       + '<div class="settings-section-header-row">'
       + '<button class="btn sm' + (_paymentReorderMode?' primary':'') + '" onclick="_togglePaymentReorder()"><i class="ti ti-arrows-sort"></i> ' + (_paymentReorderMode?'Done':'Reorder') + '</button>'
+      + '<div style="display:flex;gap:8px">'
+      + '<button class="btn sm' + (_showArchivedPayment?' primary':'') + '" onclick="_toggleShowArchivedPayment()"><i class="ti ti-' + (_showArchivedPayment?'eye-off':'eye') + '"></i> ' + (_showArchivedPayment?'Hide archived':'Show archived') + '</button>'
       + '<button class="btn success sm" onclick="_settingsAddPayment()"><i class="ti ti-plus"></i> Add Option</button>'
-      + '</div>'
+      + '</div></div>'
       + '<div id="paymentAddForm" class="settings-add-form-row" style="display:none">'
       + '<input type="text" id="pa-name" placeholder="Payment option name&hellip;" onkeydown="if(event.key===\'Enter\')_settingsSavePayment()" class="settings-add-input">'
       + '<label class="revenue-checkbox-label"><input type="checkbox" id="pa-revenue" class="accent-checkbox"> Revenue</label>'
@@ -2282,6 +2299,8 @@ function _settingsSaveDelivery() {
 
 function _toggleDeliveryReorder() { _deliveryReorderMode = !_deliveryReorderMode; _showSettingsDetail('payment'); }
 function _togglePaymentReorder() { _paymentReorderMode = !_paymentReorderMode; _showSettingsDetail('payment'); }
+function _toggleShowArchivedDelivery() { _showArchivedDelivery = !_showArchivedDelivery; _showSettingsDetail('payment'); }
+function _toggleShowArchivedPayment() { _showArchivedPayment = !_showArchivedPayment; _showSettingsDetail('payment'); }
 
 var _reorderDragArr = null, _reorderDragIdx = null;
 function _reorderDragStart(e, arrName, idx) {

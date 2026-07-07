@@ -560,9 +560,11 @@ async function saveCustomer(){
   if(!name){ errEl.textContent='Name is required.'; errEl.style.display=''; return; }
   btn.disabled=true; btn.innerHTML='<i class="ti ti-loader-2"></i> Saving…';
   try{
+    const existing = editingCustomerId && customers.find(c=>c.id===editingCustomerId);
     const row = {
       id:      editingCustomerId||nextCustomerId(),
-      name, email, phone, address, notes
+      name, email, phone, address, notes,
+      archived: existing ? existing.archived : false
     };
     await sbUpsert('customers', row);
     if(editingCustomerId){
@@ -602,6 +604,26 @@ function deleteCustomer(id, name){
       alert(msg);
     }
   });
+}
+
+async function archiveCustomer(id, name){
+  showConfirm(`Archive customer "${name}"? They have existing orders, so they'll be moved to the bottom of the list instead of deleted.`, async () => {
+    try{
+      await sbPatch('customers', 'id=eq.'+encodeURIComponent(id), {archived:true});
+      const c = customers.find(c=>c.id===id);
+      if(c) c.archived = true;
+      _refreshCustomersView();
+    }catch(e){ alert('Archive failed: '+e.message); }
+  }, {confirmLabel:'Archive', isDanger:false});
+}
+
+async function unarchiveCustomer(id){
+  try{
+    await sbPatch('customers', 'id=eq.'+encodeURIComponent(id), {archived:false});
+    const c = customers.find(c=>c.id===id);
+    if(c) c.archived = false;
+    _refreshCustomersView();
+  }catch(e){ alert('Restore failed: '+e.message); }
 }
 
 // ── Inventory item add/edit form (inline in the detail column) ──
