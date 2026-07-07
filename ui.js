@@ -1543,8 +1543,8 @@ function _showInboxDetailFromData(orderId, rows) {
   }).join('');
 
   const badgeRows = rows.filter(r => {
-    const c = cats.find(c => String(c.id) === String(r.catId));
-    return c && c.name.toLowerCase().indexOf('name badge') !== -1;
+    const rowCatOpts = opts.filter(o => String(o.catId) === String(r.catId));
+    return rowCatOpts.some(o => o.name.trim().toLowerCase() === 'backing');
   });
   const batchItems = badgeRows.map(r => {
     const p = {};

@@ -1094,7 +1094,7 @@ async function _loadBadge3mfDeps() {
   if (_badge3mfReady) return;
   const load = src => new Promise((res, rej) => {
     const s = document.createElement('script'); s.src = src;
-    s.onload = res; s.onerror = rej; document.head.appendChild(s);
+    s.onload = res; s.onerror = () => rej(new Error('Failed to load script: ' + src)); document.head.appendChild(s);
   });
   await load('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js');
   await load('https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js');
@@ -1247,6 +1247,10 @@ async function _runBadgeLoop(items, assets, onProgress) {
   return { entries, skipped };
 }
 
+// opentype.js and script-load failures don't always reject with a real Error
+// (sometimes a bare string or Event) — normalise so error UI never shows "undefined".
+function _errMsg(e) { return (e && e.message) || String(e) || 'Unknown error'; }
+
 async function _ensureBadgeDeps(assets) {
   await _loadBadge3mfDeps();
   if (!_badgeFont) {
@@ -1275,7 +1279,7 @@ async function generateAllBadgesZip(items) {
     _batchShowDone(`${entries.length} of ${total} badges downloaded as ${zipName}`, skipped);
   } catch(e) {
     console.error('Generate badges ZIP error:', e);
-    _batchShowError(e.message);
+    _batchShowError(_errMsg(e));
   }
 }
 
@@ -1299,7 +1303,7 @@ async function generateAllBadges(items) {
     _batchShowDone(`${entries.length} of ${total} badges downloaded`, skipped);
   } catch(e) {
     console.error('Generate all badges error:', e);
-    _batchShowError(e.message);
+    _batchShowError(_errMsg(e));
   }
 }
 
@@ -1352,7 +1356,7 @@ async function generateBadge(url) {
     setStatus('ok', 'Badge downloaded: ' + result.filename);
   } catch(e) {
     console.error('Badge generation error:', e);
-    setStatus('err', 'Badge failed: ' + e.message);
+    setStatus('err', 'Badge failed: ' + _errMsg(e));
   }
 }
 
