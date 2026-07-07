@@ -55,37 +55,35 @@ async function selectOrderStatus(orderId, newStatus, optEl){
   renderTable();
   try{
     await sbUpsert('orders', rows.map(row=>({id:row.id,order_id:row.orderId,customer:row.customer,customer_id:row.customer_id||null,address:row.address,delivery:row.delivery,payment:row.payment,cat_id:row.catId,qty:row.qty,price:row.price,total:row.total,status:newStatus,date:row.date,notes:row.notes,options:row.options})));
+    if(newStatus==='Complete') await _consumeInventoryForOrder(rows);
     setStatus('ok','All items updated');
   }catch(e){ setStatus('err','Save failed'); }
 }
 
-// ── Previously made check ─────────────────────────────────
-// A signature is catId + normalised options string
-// An order row counts as "made" if ANY order row with the same
-// catId + options has status === 'Complete'
-function buildMadeSet(){
-  const made = new Set();
-  orders.forEach(o=>{
-    if(o.status==='Complete' && o.catId){
-      made.add(o.catId + '|' + normaliseOpts(o.options));
-    }
-  });
-  return made;
+// ── Status breadcrumb (read-only Detail view) ───────────────
+// On Hold / Cancelled aren't part of the forward flow — they're only
+// set/cleared from the Edit Order form, and show as a plain badge here.
+const STATUS_FLOW = ['Pending','Confirmed','Printed','Complete'];
+const STATUS_FLOW_VAR = {Pending:'--amber',Confirmed:'--blue',Printed:'--teal',Complete:'--green'};
+
+function _buildStatusBreadcrumb(orderId, status){
+  if(status==='On Hold' || status==='Cancelled'){
+    return '<div class="status-badge-plain b-' + status.toLowerCase().replace(' ','-') + '">' + status + '</div>';
+  }
+  const currentIdx = STATUS_FLOW.indexOf(status);
+  return '<div class="status-breadcrumb">' + STATUS_FLOW.map((s, i) => {
+    const role = i < currentIdx ? 'sbc-previous' : (i === currentIdx ? 'sbc-current' : 'sbc-future');
+    return '<div class="status-breadcrumb-step ' + role + '" style="--sbc-color:var(' + STATUS_FLOW_VAR[s] + ')"'
+      + ' onclick="confirmStatusStep(\'' + esc(String(orderId)) + '\',\'' + s + '\')">' + s + '</div>';
+  }).join('') + '</div>';
 }
 
-function normaliseOpts(optsStr){
-  // Split by || (field separator), extract values, sort for order-independent matching
-  if(!optsStr) return '';
-  return optsStr.split('||')
-    .map(p=>{ const idx=p.indexOf(':'); return idx>=0?p.slice(idx+1).trim().toLowerCase():p.trim().toLowerCase(); })
-    .filter(Boolean).sort().join('|');
-}
-
-function wasPreviouslyMade(o, madeSet){
-  // Show tick on ANY row whose catId + options matches a Complete row
-  // including the completed row itself
-  const sig = o.catId + '|' + normaliseOpts(o.options);
-  return madeSet.has(sig);
+function confirmStatusStep(orderId, newStatus){
+  const rows = orders.filter(r=>String(r.orderId)===String(orderId));
+  if(!rows.length || rows[0].status===newStatus) return;
+  showConfirm('Set this order to "' + newStatus + '"? This applies to all items in the order.', function(){
+    selectOrderStatus(orderId, newStatus);
+  }, {confirmLabel:'Set to '+newStatus, isDanger:false});
 }
 
 // ── Render table ───────────────────────────────────────────
@@ -108,7 +106,6 @@ function renderTable(){
   const fStatuses = getFilterValues('status');
   const fCats     = getFilterValues('cat');
   const fPays     = getFilterValues('pay');
-  const madeSet=buildMadeSet();
 
   let list=orders.filter(o=>{
     if(fStatuses.length&&!fStatuses.includes(o.status||'Pending'))return false;
@@ -164,9 +161,6 @@ function sortBy(k){
   updateSortUI();
   renderTable();
 }
-function showNote(m,n){document.getElementById('noteModalTitle').textContent=m?'Note — '+m:'Note';document.getElementById('noteModalBody').textContent=n||'(No note recorded)';document.getElementById('noteModal').classList.add('open');}
-function closeNoteModal(){document.getElementById('noteModal').classList.remove('open');}
-
 // ── Address autocomplete (Google Maps Places) ─────────────
 function initAutocomplete(){
   const input = document.getElementById('f-address');
@@ -227,7 +221,8 @@ function renderModelOpts(idx, catId, savedOpts){
       const warnDiv=isBadgeCat?`<div class="badge-width-warn" id="bww-${idx}" style="display:none"></div>`:'';
       const multiBadge=opt.multi_item?`<span class="multi-item-badge" id="mb-${idx}-${opt.id}" style="display:none"></span>`:'';
       const inputVal=esc(opt.force_caps&&val?val.toUpperCase():val);
-      return`<div class="opt-row"><label>${esc(opt.name)}</label><div style="display:flex;align-items:center;gap:6px;flex:1"><input type="text" id="ov-${idx}-${opt.id}" value="${inputVal}" placeholder="Enter ${esc(opt.name).toLowerCase()}… or comma-separate for multiple" style="${capsStyle}flex:1" oninput="${capsHandler}">${multiBadge}</div></div>${warnDiv}`;
+      const capsClass=opt.force_caps?' opt-text-uppercase':'';
+      return`<div class="opt-row"><label>${esc(opt.name)}</label><div class="opt-text-input-wrap"><input type="text" class="opt-text-input${capsClass}" id="ov-${idx}-${opt.id}" value="${inputVal}" placeholder="Enter ${esc(opt.name).toLowerCase()}… or comma-separate for multiple" oninput="${capsHandler}">${multiBadge}</div></div>${warnDiv}`;
     } else {
       // dropdown
       const items=opt.options.split(',').map(s=>s.trim()).filter(Boolean);
@@ -257,7 +252,7 @@ function renderModelOpts(idx, catId, savedOpts){
           const key=combo.key;
           return `<option value="${esc(key)}" ${ddVal===key?'selected':''}>${esc(label)}</option>`;
         }).join('');
-        const selectHtml=`<select id="ov-${idx}-${opt.id}" onchange="colourOptChanged(${idx},'${opt.id}',this.value)" style="flex:1;width:auto;min-width:0">
+        const selectHtml=`<select class="flex-fill-input" id="ov-${idx}-${opt.id}" onchange="colourOptChanged(${idx},'${opt.id}',this.value)">
           <option value="">— select —</option>
           <option value="Custom" ${ddVal==='Custom'?'selected':''}>✦ Custom (choose ${numColours} colours)</option>
           ${savedCombos.length?`<optgroup label="── Saved combinations ──">${comboOptions}</optgroup>`:''}
@@ -322,7 +317,7 @@ function buildColourPicker(id, selectedName, onChangeFn){
   const label    = sel ? sel.name : '— none —';
   return `<div class="colour-picker-wrap" id="cpw-${id}">
     <div class="colour-picker-btn" onclick="toggleColourPicker('${id}')" id="cpb-${id}">
-      <div class="cp-swatch" style="background:${swatchBg}"></div>
+      <div class="cp-swatch" style="--sw:${swatchBg}"></div>
       <span class="cp-label">${esc(label)}</span>
       <i class="ti ti-chevron-down cp-arrow"></i>
     </div>
@@ -330,7 +325,7 @@ function buildColourPicker(id, selectedName, onChangeFn){
       <div class="cp-none" onclick="selectColour('${id}','',${onChangeFn})" >— none —</div>
       ${avail.map(c=>`
         <div class="cp-option ${c.name===selectedName?'selected':''}" onclick="selectColour('${id}','${escJsAttr(c.name)}',${onChangeFn})">
-          <div class="cp-swatch" style="background:${esc(c.code)}"></div>
+          <div class="cp-swatch" style="--sw:${esc(c.code)}"></div>
           <span>${esc(c.name)}</span>
         </div>`).join('')}
     </div>
@@ -404,10 +399,10 @@ function buildLayerSwatch(id, selectedName, layerNum, onChangeFn){
   const swatchBg = sel ? sel.code : 'transparent';
   const label    = sel ? sel.name : '— none —';
   return `<div class="layer-swatch-wrap" id="cpw-${id}" data-value="${esc(selectedName||'')}">
-    <button type="button" class="layer-swatch-btn" style="background:${swatchBg}" data-tt="Layer ${layerNum}: ${esc(label)}" onclick="event.stopPropagation();toggleLayerSwatchPicker('${id}',this)"></button>
+    <button type="button" class="layer-swatch-btn" style="--sw:${swatchBg}" data-tt="Layer ${layerNum}: ${esc(label)}" onclick="event.stopPropagation();toggleLayerSwatchPicker('${id}',this)"></button>
     <div class="layer-swatch-picker" id="lsp-${id}" style="display:none">
-      <button type="button" class="layer-swatch-opt" style="background:transparent;border-style:dashed" data-name="" data-tt="— none —" onclick="selectLayerSwatch('${id}','',${onChangeFn})"></button>
-      ${avail.map(c=>`<button type="button" class="layer-swatch-opt${c.name===selectedName?' selected':''}" style="background:${esc(c.code)}" data-name="${esc(c.name)}" data-tt="${esc(c.name)}" onclick="selectLayerSwatch('${id}','${escJsAttr(c.name)}',${onChangeFn})"></button>`).join('')}
+      <button type="button" class="layer-swatch-opt layer-swatch-opt-none" data-name="" data-tt="— none —" onclick="selectLayerSwatch('${id}','',${onChangeFn})"></button>
+      ${avail.map(c=>`<button type="button" class="layer-swatch-opt${c.name===selectedName?' selected':''}" style="--sw:${esc(c.code)}" data-name="${esc(c.name)}" data-tt="${esc(c.name)}" onclick="selectLayerSwatch('${id}','${escJsAttr(c.name)}',${onChangeFn})"></button>`).join('')}
     </div>
   </div>`;
 }
@@ -495,10 +490,11 @@ function addModelRow(d){
       <div class="prefix-input-wrap"><span>$</span><input type="number" class="ns-init" id="mp-${idx}" value="${d.price?Number(d.price).toFixed(2):''}" step="0.01" min="0" placeholder="0.00" oninput="calcTotal()"></div>
     </div>
     <div class="model-options" id="mo-${idx}"></div>
-    <div class="opt-row" style="margin-top:4px">
+    <div class="opt-row opt-row-notes">
       <label>Notes</label>
-      <div style="display:flex;gap:8px;align-items:center;min-width:0">
-        <input type="text" id="mn-${idx}" value="${esc(d.notes||'')}" placeholder="Item notes (colour, material, special requests…)" style="flex:1;width:auto;min-width:0">
+      <div class="opt-row-notes-inner">
+        <input type="text" class="flex-fill-input" id="mn-${idx}" value="${esc(d.notes||'')}" placeholder="Item notes (colour, material, special requests…)">
+        <span class="total-label">Total</span>
         <div class="total-val" id="mt-${idx}">—</div>
       </div>
     </div>
@@ -641,25 +637,25 @@ function _orderFormHtml(){
   return '<div class="inbox-detail">'
     + '<div class="modal-title-row">'
     + '<div class="modal-title" id="modalTitle">New Order</div>'
-    + '<div style="display:flex;gap:8px">'
+    + '<div class="modal-title-actions">'
     + '<button class="btn" onclick="closeModal()">Cancel</button>'
-    + '<button class="btn primary" id="saveBtn" onclick="saveOrder()"><i class="ti ti-check"></i> Save Order</button>'
+    + '<button class="btn success" id="saveBtn" onclick="saveOrder()"><i class="ti ti-check"></i> Save Order</button>'
     + '</div>'
     + '<input type="hidden" id="f-date">'
     + '</div>'
     + '<div class="field-row">'
     + '<div class="field">'
     + '<label>Customer name</label>'
-    + '<div style="position:relative">'
+    + '<div class="field-pos-relative">'
     + '<input id="f-customer" type="text" placeholder="Search existing or type a new name&hellip;" autocomplete="off" oninput="this.closest(\'.field\').classList.remove(\'field-error\');this.closest(\'.field\').querySelector(\'.field-error-msg\')?.remove()">'
-    + '<div id="customerSuggestions" class="colour-picker-list" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:9999;max-height:200px;overflow-y:auto"></div>'
+    + '<div id="customerSuggestions" class="colour-picker-list customer-suggestions-pos" style="display:none"></div>'
     + '</div>'
     + '<input type="hidden" id="f-customer-id">'
     + '</div>'
     + '<div class="field"><label>Delivery type</label><select id="f-delivery" onchange="calcTotal()"></select></div>'
     + '</div>'
-    + '<div id="newCustomerPanel" style="display:none;background:rgba(92,184,122,0.06);border:1px solid rgba(92,184,122,0.25);border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:12px">'
-    + '<div style="font-size:11px;font-weight:500;color:var(--green);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px"><i class="ti ti-user-plus" style="margin-right:6px"></i>New customer — add details</div>'
+    + '<div id="newCustomerPanel" class="new-customer-panel" style="display:none">'
+    + '<div class="new-customer-panel-title"><i class="ti ti-user-plus"></i>New customer — add details</div>'
     + '<div class="field-row">'
     + '<div class="field"><label>Email</label><input type="email" id="nc-email" placeholder="optional"></div>'
     + '<div class="field"><label>Phone</label><input type="tel" id="nc-phone" placeholder="optional"></div>'
@@ -669,30 +665,35 @@ function _orderFormHtml(){
     + '<div class="field-row">'
     + '<div class="field">'
     + '<label>Address / Location</label>'
-    + '<div class="addr-wrap" style="display:flex;gap:6px;align-items:center">'
-    + '<div style="position:relative;flex:1">'
+    + '<div class="addr-wrap">'
+    + '<div class="field-pos-relative field-flex-1">'
     + '<input id="f-address" type="text" placeholder="Address or location note&hellip;" autocomplete="off" oninput="this.closest(\'.field\').classList.remove(\'field-error\');this.closest(\'.field\').querySelector(\'.field-error-msg\')?.remove()">'
     + '<i class="ti ti-map-pin-check addr-tick" id="addrTick"></i>'
     + '</div>'
-    + '<button class="btn icon-only" id="addrRefreshBtn" onclick="revertToCustomerAddress()" style="flex-shrink:0" title=""><i class="ti ti-refresh"></i></button>'
+    + '<button class="btn icon-only addr-refresh-btn" id="addrRefreshBtn" onclick="revertToCustomerAddress()" title=""><i class="ti ti-refresh"></i></button>'
     + '</div>'
     + '<div class="field-hint">Select a suggestion for a validated address, or type any location note freely.</div>'
     + '</div>'
     + '<div class="field"><label>Payment</label><select id="f-payment"></select></div>'
     + '</div>'
+    + '<div class="field-row" id="f-holdstatus-row" style="display:none">'
+    + '<div class="field"><label>Order status override</label>'
+    + '<select id="f-holdstatus"><option value="">Normal workflow (Pending → Complete)</option><option value="On Hold">On Hold</option><option value="Cancelled">Cancelled</option></select>'
+    + '</div>'
+    + '</div>'
     + '<div class="modal-actions">'
     + '<div class="order-total-inline"><span class="order-total-lbl">Total</span><span class="order-total-val" id="orderTotal">$0.00</span></div>'
-    + '<div style="flex:1"></div>'
+    + '<div class="flex-1"></div>'
     + '<div class="order-date-plain"><label>Order Date</label><div class="order-date-val" id="f-date-display"></div></div>'
     + '</div>'
     + '<div class="models-section">'
     + '<div class="models-hdr">'
     + '<span class="models-label">Items</span>'
-    + '<div class="inbox-search-row" id="itemFilterWrap" style="display:none;flex:1;min-width:0;margin:0 8px">'
+    + '<div class="inbox-search-row item-filter-wrap-pos" id="itemFilterWrap" style="display:none">'
     + '<i class="ti ti-search inbox-search-icon"></i>'
     + '<input type="text" id="itemFilter" placeholder="Filter items…" oninput="filterModelRows(this.value)">'
     + '</div>'
-    + '<button class="btn sm" onclick="addModelRow()"><i class="ti ti-plus"></i> Add item</button>'
+    + '<button class="btn success sm" onclick="addModelRow()"><i class="ti ti-plus"></i> Add item</button>'
     + '</div>'
     + '<div class="model-rows" id="modelRows"></div>'
     + '</div>'
@@ -717,6 +718,7 @@ function openAddModal(){
   fPayment.innerHTML = getActivePaymentOptions().map(p=>`<option value="${esc(p.name)}">${esc(p.name)}</option>`).join('');
   fPayment.value = getActivePaymentOptions()[0]?.name||'No';
   document.getElementById('newCustomerPanel').style.display='none';
+  document.getElementById('f-holdstatus-row').style.display='none';
   updateAddrRefreshBtn();
   const today=todayDMY();
   document.getElementById('f-date').value=today;
@@ -737,6 +739,8 @@ function openEdit(orderId){
   document.getElementById('f-customer-id').value=first.customer_id||'';
   // Auto-show new customer panel for orders not yet linked to a customer record
   document.getElementById('newCustomerPanel').style.display = first.customer_id ? 'none' : '';
+  document.getElementById('f-holdstatus-row').style.display='';
+  document.getElementById('f-holdstatus').value = (first.status==='On Hold'||first.status==='Cancelled') ? first.status : '';
   updateAddrRefreshBtn();
   updateCustomerBorder();
   document.getElementById('f-address').value=first.address||'';
@@ -764,7 +768,7 @@ function closeModal(){
   } else if(_inboxSelectedOrderId){
     showInboxDetail(_inboxSelectedOrderId);
   } else {
-    document.getElementById('inboxDetail').innerHTML='<div class="inbox-no-selection"><i class="ti ti-inbox"></i><p>Select an order</p></div>';
+    document.getElementById('inboxDetail').innerHTML='<div class="inbox-no-selection"><i class="ti ti-inbox"></i><p>Select an order to view its details</p></div>';
   }
 }
 
@@ -918,14 +922,24 @@ async function saveOrder(){
     id:makeRowId(orderId, i),orderId,customer,customer_id:customerId,address,delivery,payment,
     model:m.model,catId:m.catId,qty:m.qty,price:m.price,
     total:parseFloat((m.qty*m.price).toFixed(2)),
-    status:'Pending',date,notes:m.notes,options:m.options
+    status:'Pending',date,notes:m.notes,options:m.options,
+    printed:false,paid:false,inv_consumed:false
   }));
-  // When editing preserve the existing status for each matching row
+  // When editing preserve the existing status/printed/inv_consumed (per item) and paid (per order)
+  const holdStatus = document.getElementById('f-holdstatus')?.value || '';
   if(editOId){
+    const existingPaid = orders.find(o=>o.orderId===editOId)?.paid||false;
     newRows.forEach(nr=>{
+      nr.paid = existingPaid;
       const existing=orders.find(o=>o.orderId===editOId&&o.model===nr.model);
-      if(existing)nr.status=existing.status;
+      if(existing){ nr.status=existing.status; nr.printed=existing.printed; nr.inv_consumed=existing.inv_consumed; }
     });
+    if(holdStatus){
+      newRows.forEach(nr=>{ nr.status = holdStatus; });
+    } else {
+      // Reverting away from On Hold/Cancelled back to normal workflow
+      newRows.forEach(nr=>{ if(nr.status==='On Hold'||nr.status==='Cancelled') nr.status='Pending'; });
+    }
   }
   busy=true;
   const btn=document.getElementById('saveBtn');
@@ -942,9 +956,11 @@ async function saveOrder(){
         address: row.address, delivery: row.delivery, payment: row.payment,
         cat_id: row.catId, qty: row.qty,
         price: row.price, total: row.total, status: row.status,
-        date: row.date, notes: row.notes, options: row.options
+        date: row.date, notes: row.notes, options: row.options,
+        printed: row.printed, paid: row.paid, inv_consumed: row.inv_consumed
       });
     }
+    if(editOId && !holdStatus) await _maybeAdvanceStatus(orderId);
     setStatus('ok','Saved · '+uniqueOrderCount()+' orders');
   }catch(e){setStatus('err','Save failed: '+e.message);}
   finally{busy=false;btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Save Order';}
@@ -980,6 +996,85 @@ async function updateStatus(orderId,rowId,newStatus,sel){
   }finally{
     sel.disabled=false;
     sel.dataset.prev=newStatus;
+  }
+}
+
+// ── Printed / Paid tracking ─────────────────────────────────
+async function toggleItemPrinted(rowId, checked){
+  const row = orders.find(o=>String(o.id)===String(rowId));
+  if(!row) return;
+  row.printed = checked;
+  try{
+    await sbUpsert('orders', {id: row.id, printed: checked});
+  }catch(e){
+    row.printed = !checked;
+    setStatus('err','Save failed: '+e.message);
+    renderTable();
+    return;
+  }
+  await _maybeAdvanceStatus(row.orderId);
+  renderTable();
+}
+
+async function toggleOrderPaid(orderId, checked){
+  const rows = orders.filter(r=>String(r.orderId)===String(orderId));
+  if(!rows.length) return;
+  rows.forEach(r=>r.paid=checked);
+  try{
+    await sbUpsert('orders', rows.map(r=>({id:r.id, paid:checked})));
+  }catch(e){
+    rows.forEach(r=>r.paid=!checked);
+    setStatus('err','Save failed: '+e.message);
+    renderTable();
+    return;
+  }
+  await _maybeAdvanceStatus(orderId);
+  renderTable();
+}
+
+// Matches each row's option values (e.g. "Backing:Magnet") against inventory item
+// names by exact text — no explicit linking needed, just name the item to match.
+// Guarded by row.inv_consumed so re-processing an already-Complete order never
+// double-counts stock usage.
+async function _consumeInventoryForOrder(rows){
+  for(const row of rows){
+    if(row.inv_consumed || !row.options) continue;
+    const values = row.options.split('||').map(p=>p.includes(':')?p.split(':').slice(1).join(':').trim():'').filter(Boolean);
+    for(const value of values){
+      const item = inventoryItems.find(i=>i.name.toLowerCase()===value.toLowerCase());
+      if(!item) continue;
+      const rec = {id: nextInventoryConsumptionId(), item_id: item.id, order_id: row.orderId, qty: row.qty, date: todayISO()};
+      try{
+        await sbUpsert('inventory_consumption', rec);
+        inventoryConsumption.push(normaliseInventoryConsumption(rec));
+      }catch(e){ /* non-fatal — don't block the status update over a logging failure */ }
+    }
+    row.inv_consumed = true;
+    try{ await sbUpsert('orders', {id: row.id, inv_consumed:true}); }catch(e){}
+  }
+}
+
+// Forward-only auto-advance: Pending/Confirmed -> Printed -> Complete, once every
+// item is printed and/or the order is paid. Never auto-downgrades — On Hold,
+// Cancelled and Complete are left alone, and any correction is a manual status change.
+async function _maybeAdvanceStatus(orderId){
+  const rows = orders.filter(r=>String(r.orderId)===String(orderId));
+  if(!rows.length) return;
+  const status = rows[0].status;
+  if(['On Hold','Cancelled','Complete'].includes(status)) return;
+  const allPrinted = rows.every(r=>r.printed);
+  const paid = rows[0].paid;
+  let next=null;
+  if(status==='Printed' && paid) next='Complete';
+  else if((status==='Pending'||status==='Confirmed') && allPrinted) next = paid?'Complete':'Printed';
+  if(!next) return;
+  rows.forEach(r=>r.status=next);
+  try{
+    await sbUpsert('orders', rows.map(r=>({id:r.id, status:next})));
+    if(next==='Complete') await _consumeInventoryForOrder(rows);
+    setStatus('ok', 'Status advanced to '+next);
+  }catch(e){
+    setStatus('err','Save failed: '+e.message);
   }
 }
 
@@ -1043,7 +1138,7 @@ function _deleteOrderWithUndo(orderId){
   if(String(_inboxSelectedOrderId)===String(orderId)){
     _inboxSelectedOrderId=null;
     const detail=document.getElementById('inboxDetail');
-    if(detail)detail.innerHTML='<div class="inbox-no-selection"><i class="ti ti-inbox"></i><p>Select an order</p></div>';
+    if(detail)detail.innerHTML='<div class="inbox-no-selection"><i class="ti ti-inbox"></i><p>Select an order to view its details</p></div>';
   }
   renderTable();
   const timeoutId=setTimeout(async()=>{
@@ -1275,6 +1370,7 @@ function renderInboxList(list) {
     const total = rows.reduce((s, r) => s + r.total, 0) + deliveryCost;
     const status = first.status || 'Pending';
     const blClass = 'bl-' + status.toLowerCase().replace(' ', '-');
+    const bClass = 'b-' + status.toLowerCase().replace(' ', '-');
     const isSelected = oid === String(_inboxSelectedOrderId);
     const itemQtys = new Map();
     rows.forEach(r => {
@@ -1282,17 +1378,15 @@ function renderInboxList(list) {
       const name = cat ? cat.name : '?';
       itemQtys.set(name, (itemQtys.get(name) || 0) + (r.qty || 1));
     });
-    const itemLines = [...itemQtys.entries()].map(([name, qty]) =>
-      '<div class="inbox-card-item-line"><span>' + esc(name) + '</span><span>' + qty + '</span></div>'
+    const paidLabel = '<span class="inbox-card-paid ' + (first.paid ? 'text-green' : 'text-red') + '">' + (first.paid ? 'Paid' : 'Unpaid') + '</span>';
+    const itemLines = [...itemQtys.entries()].map(([name, qty], i) =>
+      '<div class="inbox-card-item-line"><span class="inbox-card-item-name">' + esc(name) + '</span><span class="inbox-card-item-qty">x ' + qty + '</span>' + (i===0 ? paidLabel : '') + '</div>'
     ).join('');
-    const statusColor = {Pending:'rgba(232,169,58,0.15)',Printing:'rgba(91,156,246,0.15)',Complete:'rgba(92,184,122,0.15)','On Hold':'rgba(224,124,58,0.15)',Cancelled:'rgba(224,92,92,0.15)'}[status]||'rgba(136,136,133,0.15)';
-    const statusText = {Pending:'var(--amber)',Printing:'var(--blue)',Complete:'var(--green)','On Hold':'var(--orange)',Cancelled:'var(--red)'}[status]||'var(--muted)';
-
     return '<div class="inbox-card ' + blClass + (isSelected ? ' selected' : '') + '" onclick="showInboxDetail(\'' + esc(oid) + '\')">'
       + '<div class="inbox-card-content">'
       + '<div class="inbox-card-row1">'
       + '<span class="inbox-card-customer">' + (esc(first.customer) || '?') + '</span>'
-      + '<span class="inbox-card-status" style="background:' + statusColor + ';color:' + statusText + '">' + status + '</span>'
+      + '<span class="inbox-card-status ' + bClass + '">' + status + '</span>'
       + '</div>'
       + '<div class="inbox-card-items">' + itemLines + '</div>'
       + '<div class="inbox-card-footer">'
@@ -1311,9 +1405,7 @@ function renderInboxList(list) {
 }
 
 function _inboxEmptyStateHtml() {
-  const pending = orders.filter(o => (o.status||'Pending') === 'Pending').length;
-  const msg = pending ? pending + (pending===1?' order':' orders') + ' waiting — pick one to get started' : 'All caught up — nothing pending';
-  return '<div class="inbox-no-selection"><i class="ti ti-inbox"></i><p>'+msg+'</p></div>';
+  return '<div class="inbox-no-selection"><i class="ti ti-inbox"></i><p>Select an order to view its details</p></div>';
 }
 
 function _inboxClearDetailIfGone(orderIds) {
@@ -1342,23 +1434,16 @@ function _showInboxDetailFromData(orderId, rows) {
 
   const first = rows[0];
   const status = first.status || 'Pending';
-  const bc = 'b-' + status.toLowerCase().replace(' ', '-');
   const deliveryCost = deliveryOptions.find(d => d.name === first.delivery)?.price || 0;
   const total = rows.reduce((s, r) => s + r.total, 0) + deliveryCost;
   const orderNum = orderNumFromId(orderId);
-  const madeSet = buildMadeSet();
 
-  const statusOpts = ['Pending','Printing','Complete','On Hold','Cancelled'].map(s =>
-    '<div class="status-dd-opt b-' + s.toLowerCase().replace(' ','-') + (status===s?' active':'') + '"'
-    + ' onclick="selectOrderStatus(\'' + esc(String(orderId)) + '\',\'' + s + '\',this)">' + s + '</div>'
-  ).join('');
+  const statusDd = _buildStatusBreadcrumb(orderId, status);
 
-  const statusDd = '<div class="status-dd-wrap">'
-    + '<button class="status-dd-btn order-status-dd ' + bc + '" onclick="toggleStatusDd(\'order-' + esc(String(orderId)) + '\',this)">'
-    + '<span>' + esc(status) + '</span><i class="ti ti-chevron-down"></i>'
-    + '</button>'
-    + '<div class="status-dd-list" id="sdd-order-' + esc(String(orderId)) + '">' + statusOpts + '</div>'
-    + '</div>';
+  const paidToggle = '<button class="paid-btn ' + (first.paid ? 'paid-btn-yes' : 'paid-btn-no') + '"'
+    + ' onclick="toggleOrderPaid(\'' + esc(String(orderId)) + '\',' + (!first.paid) + ')">'
+    + (first.paid ? 'Paid' : 'Unpaid')
+    + '</button>';
 
   const deliveryOpt = deliveryOptions.find(d => d.name === first.delivery);
   const deliveryIcon = '<i class="ti ' + ((deliveryOpt && deliveryOpt.icon) || 'ti-mail') + '"></i>';
@@ -1382,7 +1467,7 @@ function _showInboxDetailFromData(orderId, rows) {
         '<div class="sort-option' + (window._itemSort === s.f ? ' active' : '') + '" data-detail-sort="' + s.f + '" onclick="_setDetailSort(\'' + s.f + '\',\'' + s.l + '\')">' + s.l + '</div>'
       ).join('')
     + (_sortableOptNames.length
-        ? '<div class="filter-section-title" style="margin-top:8px">Option</div>'
+        ? '<div class="filter-section-title filter-section-title-mt">Option</div>'
           + _sortableOptNames.map(name => {
               const key = 'opt:' + name;
               return '<div class="sort-option indented' + (window._itemSort === key ? ' active' : '') + '" data-detail-sort="' + esc(key) + '" onclick="_setDetailSort(\'' + escJsAttr(key) + '\',\'' + escJsAttr(name) + '\')">' + esc(name) + '</div>';
@@ -1396,7 +1481,6 @@ function _showInboxDetailFromData(orderId, rows) {
       const idx = p.indexOf(':'); if (idx >= 0) parsedOpts[p.slice(0,idx).trim()] = p.slice(idx+1).trim();
     });
     const catOpts = opts.filter(o => String(o.catId) === String(row.catId));
-    const prevMade = wasPreviouslyMade(row, madeSet);
     const isBadge = cat && cat.name.toLowerCase().indexOf('name badge') !== -1;
 
     const optLines = catOpts.map(opt => {
@@ -1406,7 +1490,7 @@ function _showInboxDetailFromData(orderId, rows) {
       if (isColour) {
         const swatches = val.split('|').map(name => {
           const c = colours.find(c => c.name.toLowerCase() === name.toLowerCase());
-          return '<span class="inbox-item-swatch" style="background:' + (c ? c.code : '#ccc') + '" title="' + esc(name) + '"></span>';
+          return '<span class="inbox-item-swatch" style="--sw:' + (c ? c.code : '#ccc') + '" title="' + esc(name) + '"></span>';
         }).join('');
         return '<div class="inbox-item-opt">'
           + '<span class="inbox-item-opt-label">' + esc(opt.name) + ':</span>'
@@ -1422,10 +1506,15 @@ function _showInboxDetailFromData(orderId, rows) {
 
     const badgeParams = new URLSearchParams({name:parsedOpts['Text']||'',backing:parsedOpts['Backing']||'',colours:parsedOpts['Colours']||''});
     const badgeBtn = isBadge
-      ? '<button class="icon-btn" title="Generate Badge" onclick="generateBadge(\'/badge/?' + badgeParams + '\')"><i class="ti ti-badge"></i></button>'
+      ? '<button class="sort-btn-main" title="Generate Badge" onclick="generateBadge(\'/badge/?' + badgeParams + '\')"><i class="ti ti-badge"></i> Download 3MF</button>'
       : '';
 
     const searchText = [cat ? cat.name : '', Object.values(parsedOpts).join(' '), row.notes || ''].join(' ').toLowerCase();
+
+    const printedBtn = '<button class="paid-btn sm ' + (row.printed ? 'paid-btn-yes' : 'paid-btn-no') + '"'
+      + ' onclick="toggleItemPrinted(\'' + esc(String(row.id)) + '\',' + (!row.printed) + ')">'
+      + (row.printed ? 'Printed' : 'Not Printed')
+      + '</button>';
 
     return '<div class="inbox-item-card"'
       + ' data-search="' + esc(searchText) + '"'
@@ -1436,17 +1525,17 @@ function _showInboxDetailFromData(orderId, rows) {
       + ' data-optstr="' + esc(row.options || '') + '"'
       + ' data-idx="' + _idx + '">'
       + '<div class="inbox-item-left">'
-      + '<div class="inbox-item-qty">' + row.qty + '</div>'
-      + '<div class="inbox-item-qty-label">qty</div>'
+      + '<div class="inbox-item-unit-price">$' + row.price.toFixed(2) + '</div>'
+      + '<div class="inbox-item-qty"><span class="inbox-item-qty-x">x</span> ' + row.qty + '</div>'
       + '<div class="inbox-item-price">$' + row.total.toFixed(2) + '</div>'
       + '</div>'
       + '<div class="inbox-item-divider"></div>'
       + '<div class="inbox-item-right">'
-      + '<div class="inbox-item-cat">' + (cat ? esc(cat.name) : '?') + (prevMade ? ' <span class="made-tick"><i class="ti ti-circle-check-filled"></i></span>' : '') + '</div>'
+      + '<div class="inbox-item-cat">' + (cat ? esc(cat.name) : '?') + '</div>'
       + optLines
-      + (row.notes ? '<div class="inbox-item-opt" style="margin-top:5px"><i class="ti ti-notes" style="font-size:12px;opacity:0.5"></i> <em style="color:var(--muted)">' + esc(row.notes) + '</em></div>' : '')
+      + (row.notes ? '<div class="inbox-item-opt inbox-item-notes"><i class="ti ti-notes"></i> <em>' + esc(row.notes) + '</em></div>' : '')
       + '</div>'
-      + (badgeBtn ? '<div class="inbox-item-actions">' + badgeBtn + '</div>' : '')
+      + '<div class="inbox-item-actions">' + printedBtn + badgeBtn + '</div>'
       + '</div>';
   }).join('');
 
@@ -1460,47 +1549,47 @@ function _showInboxDetailFromData(orderId, rows) {
     return {name: p['Text']||'', backing: p['Backing']||'', colours: p['Colours']||''};
   });
   const bulkBadgeBtn = badgeRows.length
-    ? '<button class="btn sm" onclick="openBadgeBatchModal(' + esc(JSON.stringify(batchItems)) + ',\'' + escJsAttr(first.customer) + '\')"><i class="ti ti-badges"></i> ' + (badgeRows.length > 1 ? 'All Badges' : 'Badge') + '</button>'
+    ? '<button class="sort-btn-main ml-auto" onclick="openBadgeBatchModal(' + esc(JSON.stringify(batchItems)) + ',\'' + escJsAttr(first.customer) + '\')"><i class="ti ti-badges"></i> Download All 3MF</button>'
     : '';
 
   const printBtn = first.address
-    ? '<button class="icon-btn" style="margin-left:4px" onclick="printShippingLabel(\'' + escJsAttr(first.customer) + '\',\'' + escJsAttr(first.address) + '\',\'' + esc(String(orderId)) + '\')" title="Print label"><i class="ti ti-printer"></i></button>'
+    ? '<button class="sort-btn-main" onclick="printShippingLabel(\'' + escJsAttr(first.customer) + '\',\'' + escJsAttr(first.address) + '\',\'' + esc(String(orderId)) + '\')" title="Print label"><i class="ti ti-printer"></i> Shipping Label</button>'
     : '';
 
   detailEl.innerHTML = '<div class="inbox-detail">'
     + '<div class="inbox-detail-header">'
     + '<div class="inbox-detail-header-top">'
     + '<div class="inbox-detail-customer">' + (esc(first.customer) || '?') + '</div>'
-    + '<button class="btn sm" onclick="openEdit(\'' + esc(String(orderId)) + '\')"><i class="ti ti-edit"></i> Edit</button>'
-    + '<button class="btn sm icon-only" onclick="deleteOrder(\'' + esc(String(orderId)) + '\')" title="Delete order" style="border-color:rgba(224,92,92,0.3);color:var(--red)"><i class="ti ti-trash"></i></button>'
+    + '<button class="sort-btn-main" onclick="openEdit(\'' + esc(String(orderId)) + '\')"><i class="ti ti-edit"></i> Edit</button>'
+    + '<button class="sort-btn-main text-red" onclick="deleteOrder(\'' + esc(String(orderId)) + '\')" title="Delete order"><i class="ti ti-trash"></i></button>'
     + '</div>'
     + '</div>'
 
     + '<div class="inbox-detail-meta">'
-    + '<div class="inbox-detail-meta-item"><i class="ti ti-hash"></i><strong>' + orderNum + '</strong></div>'
+    + '<div class="inbox-detail-meta-item"><i class="ti ti-hash"></i><strong>' + orderNum.replace(/^#/, '') + '</strong></div>'
     + '<div class="inbox-detail-meta-item">' + deliveryIcon + '<strong>' + esc(first.delivery || 'Post') + '</strong></div>'
     + (first.payment ? '<div class="inbox-detail-meta-item"><i class="ti ti-credit-card"></i><strong>' + esc(first.payment) + '</strong></div>' : '')
-    + (first.address ? '<div class="inbox-detail-meta-item"><i class="ti ti-map-pin"></i><strong>' + esc(first.address) + '</strong>' + printBtn + '</div>' : '')
+    + (first.address ? '<div class="inbox-detail-meta-item"><i class="ti ti-map-pin"></i><strong>' + esc(first.address) + '</strong></div>' : '')
     + '</div>'
 
-    + statusDd
+    + '<div class="status-row-wrap">' + statusDd + paidToggle + '</div>'
 
-    + '<div>'
+    + '<div class="inbox-items-panel">'
     + '<div class="inbox-detail-items-hdr">'
-    + '<div class="inbox-detail-items-label" id="detailItemsLabel">Items (' + rows.length + ')</div>'
+    + printBtn
     + bulkBadgeBtn
     + '</div>'
-    + '<div style="display:flex;gap:6px;margin-bottom:8px;align-items:stretch">'
-    + '<div class="inbox-search-row" style="width:50%;margin-bottom:0;flex-shrink:0">'
+    + '<div class="detail-toolbar-row">'
+    + '<div class="inbox-search-row inbox-search-row-detail">'
     + '<i class="ti ti-search inbox-search-icon"></i>'
-    + '<input type="text" id="detailItemsSearch" placeholder="Filter items…" oninput="window._itemSearch=this.value;_applyDetailFilters()">'
-    + '<button id="detailItemsClear" onclick="document.getElementById(\'detailItemsSearch\').value=\'\';window._itemSearch=\'\';_applyDetailFilters()" style="display:none;background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0 2px;flex-shrink:0"><i class="ti ti-x"></i></button>'
+    + '<input type="text" id="detailItemsSearch" placeholder="Search…" oninput="window._itemSearch=this.value;_applyDetailFilters()">'
+    + '<button id="detailItemsClear" class="search-clear-btn" onclick="document.getElementById(\'detailItemsSearch\').value=\'\';window._itemSearch=\'\';_applyDetailFilters()" style="display:none"><i class="ti ti-x"></i></button>'
     + '</div>'
-    + '<div style="flex:1"></div>'
-    + (catFilterOpts ? '<div class="filter-wrap" id="detailFilterWrap">'
-    + '<button class="sort-btn-main" onclick="toggleDetailFilterPanel(event)" style="height:100%"><i class="ti ti-filter"></i> Filter<span id="detailFilterCount" style="display:none;color:var(--accent);font-weight:700;margin-left:2px"></span></button>'
+    + '<div class="flex-1"></div>'
+    + '<div class="filter-wrap" id="detailFilterWrap">'
+    + '<button class="sort-btn-main detail-filter-btn" onclick="toggleDetailFilterPanel(event)"><i class="ti ti-filter"></i> Filter<span id="detailFilterCount" class="filter-count-badge" style="display:none"></span></button>'
     + '<div class="filter-panel" id="detailFilterPanel" style="display:none" onclick="event.stopPropagation()">' + catFilterOpts + '</div>'
-    + '</div>' : '')
+    + '</div>'
     + '<div class="sort-btn-wrap" id="detailSortWrap">'
     + '<div class="sort-btn-group">'
     + '<button class="sort-btn-main" id="detailSortBtn" onclick="toggleDetailSortPanel(event)"><i class="ti ti-arrows-sort"></i> Sort</button>'
@@ -1510,8 +1599,9 @@ function _showInboxDetailFromData(orderId, rows) {
     + '</div>'
     + '</div>'
     + '<div class="inbox-items-list">' + itemsHtml + '</div>'
-    + '</div>'
-
+    + (deliveryCost > 0
+      ? '<div class="inbox-detail-delivery-line"><span>' + deliveryIcon + ' ' + esc(first.delivery) + '</span><span>$' + deliveryCost.toFixed(2) + '</span></div>'
+      : '')
     + '<div class="inbox-detail-total">'
     + '<span class="inbox-detail-total-label">Order total</span>'
     + '<span class="inbox-detail-total-val">$' + total.toFixed(2) + '</span>'
@@ -1522,6 +1612,7 @@ function _showInboxDetailFromData(orderId, rows) {
 // -- Multi-view sidebar system ------------------------------------
 let _sidebarView = 'orders';
 let _selectedCustomerId = null;
+let _selectedInventoryItemId = null;
 
 function setSidebarView(view) {
   _sidebarView = view;
@@ -1529,21 +1620,22 @@ function setSidebarView(view) {
     el.classList.toggle('active', el.dataset.view === view);
   });
   _inboxSelectedOrderId = null;
+  _selectedCustomerId = null;
+  _selectedInventoryItemId = null;
   var detail = document.getElementById('inboxDetail');
   if (detail) detail.innerHTML = '<div class="inbox-no-selection"><i class="ti ti-inbox"></i><p>Select an item</p></div>';
   if (view === 'orders') _renderViewOrders();
   else if (view === 'customers') _renderViewCustomers('');
-  else if (view === 'colours') _renderViewColours();
+  else if (view === 'inventory') _renderViewInventory('');
   else if (view === 'categories') _renderViewCategories();
   else if (view === 'stats') _renderViewStats();
   else if (view === 'settings') _renderViewSettings();
-  else if (view === 'users') _renderViewUsers();
 }
 
 function _setListPane(headerHtml) {
   var col = document.querySelector('.inbox-list-col');
   var footer = col.querySelector('.inbox-list-footer').outerHTML;
-  col.innerHTML = '<div class="inbox-list-header" style="padding:12px 14px">' + headerHtml + '</div>'
+  col.innerHTML = '<div class="inbox-list-header inbox-list-header-flat">' + headerHtml + '</div>'
     + '<div class="inbox-list" id="inboxList"></div>'
     + footer;
 }
@@ -1553,23 +1645,27 @@ function _renderViewOrders() {
   var col = document.querySelector('.inbox-list-col');
   var footer = col.querySelector('.inbox-list-footer').outerHTML;
   col.innerHTML = '<div class="inbox-list-header">'
-    + '<div class="inbox-search-row">'
+    + '<div class="view-search-row">'
+    + '<div class="inbox-search-row inbox-search-row-flex">'
     + '<i class="ti ti-search inbox-search-icon"></i>'
-    + '<input type="text" id="search" placeholder="Search…" oninput="renderTable()">'
+    + '<input type="text" id="search" placeholder="Search…" oninput="renderTable();toggleSearchClear()">'
+    + '<button id="searchClear" class="search-clear-btn" onclick="document.getElementById(\'search\').value=\'\';renderTable();toggleSearchClear()" style="display:none"><i class="ti ti-x"></i></button>'
+    + '</div>'
+    + '<button class="btn success flex-shrink-0" onclick="openAddModal()"><i class="ti ti-plus"></i> New Order</button>'
     + '</div>'
     + '<div class="inbox-sort-row">'
     + '<div class="filter-wrap" id="filterWrap">'
-    + '<button class="sort-btn-main" id="filterBtn" onclick="toggleFilterPanel(event)" style="border-radius:var(--radius);border:1px solid var(--border2);height:34px;padding:0 10px;gap:6px">'
-    + '<i class="ti ti-filter"></i> Filter <span id="filterCount" style="display:none;color:var(--accent);font-weight:700;margin-left:2px"></span>'
+    + '<button class="sort-btn-main" id="filterBtn" onclick="toggleFilterPanel(event)">'
+    + '<i class="ti ti-filter"></i> Filter <span id="filterCount" class="filter-count-badge" style="display:none"></span>'
     + '</button>'
     + '<div class="filter-panel" id="filterPanel" style="display:none">'
     + '<div class="filter-section-title">Status</div>'
-    + ['Pending','Printing','Complete','On Hold','Cancelled'].map(function(s){
+    + ['Pending','Confirmed','Printed','Complete','On Hold','Cancelled'].map(function(s){
         return '<label class="filter-check"><input type="checkbox" data-filter="status" value="' + s + '" checked onchange="renderTable();updateFilterCount()"> ' + s + '</label>';
       }).join('')
-    + '<div class="filter-section-title" style="margin-top:10px">Category</div>'
+    + '<div class="filter-section-title filter-section-title-mt10">Category</div>'
     + '<div id="filterCatChecks"></div>'
-    + '<div class="filter-section-title" style="margin-top:10px">Payment</div>'
+    + '<div class="filter-section-title filter-section-title-mt10">Payment</div>'
     + '<div id="filterPayChecks"></div>'
     + '</div>'
     + '</div>'
@@ -1594,16 +1690,12 @@ function _renderViewOrders() {
 function _renderViewCustomers(filter) {
   filter = filter || '';
   _setListPane(
-    '<div class="inbox-view-header">'
-    + '<span class="inbox-view-title">Customers</span>'
-    + '<span class="inbox-view-count">' + customers.length + '</span>'
-    + '</div>'
-    + '<div style="display:flex;gap:6px;align-items:center">'
-    + '<div class="inbox-search-row" style="flex:1;margin-bottom:0">'
+    '<div class="view-search-row">'
+    + '<div class="inbox-search-row inbox-search-row-flex">'
     + '<i class="ti ti-search inbox-search-icon"></i>'
     + '<input type="text" id="customerViewSearch" placeholder="Search customers…" value="' + esc(filter) + '" oninput="_renderViewCustomers(this.value)">'
     + '</div>'
-    + '<button class="btn sm" onclick="openAddCustomer()" style="flex-shrink:0"><i class="ti ti-plus"></i> New</button>'
+    + '<button class="btn success flex-shrink-0" onclick="openAddCustomer()"><i class="ti ti-plus"></i> New</button>'
     + '</div>'
   );
   var list = document.getElementById('inboxList');
@@ -1623,8 +1715,8 @@ function _renderViewCustomers(filter) {
       + '<div class="inbox-card-row1"><span class="inbox-card-customer">' + esc(c.name) + '</span>'
       + (ordCount ? '<span class="inbox-card-num">' + ordCount + ' order' + (ordCount!==1?'s':'') + '</span>' : '')
       + '</div>'
-      + '<div class="inbox-card-subject">' + (esc(c.email) || '<em style="opacity:0.4">No email</em>') + '</div>'
-      + '<div class="inbox-card-footer"><span style="font-size:11px;color:var(--muted)">' + (esc(c.phone)||'') + '</span></div>'
+      + '<div class="inbox-card-subject">' + (esc(c.email) || '<em class="text-faint">No email</em>') + '</div>'
+      + '<div class="inbox-card-footer"><span class="text-muted-sm">' + (esc(c.phone)||'') + '</span></div>'
       + '</div></div>';
   }).join('');
 }
@@ -1654,12 +1746,12 @@ function _showCustomerDetail(customerId) {
   var html = '<div class="inbox-detail">'
     + '<div class="inbox-detail-header">'
     + '<div class="inbox-detail-header-top">'
-    + '<div style="flex:1;min-width:0">'
+    + '<div class="flex-fill-input">'
     + '<div class="inbox-detail-customer">' + esc(c.name) + '</div>'
-    + (c.email?'<div style="font-size:12px;color:var(--muted);margin-top:2px">'+esc(c.email)+'</div>':'')
+    + (c.email?'<div class="customer-email-sub">'+esc(c.email)+'</div>':'')
     + '</div>'
-    + '<button class="btn sm" onclick="openEditCustomer(\''+esc(String(c.id))+'\')"><i class="ti ti-edit"></i> Edit</button>'
-    + '<button class="btn sm icon-only" onclick="deleteCustomer(\''+esc(String(c.id))+'\',\''+escJsAttr(c.name)+'\')" title="Delete customer" style="border-color:rgba(224,92,92,0.3);color:var(--red)"><i class="ti ti-trash"></i></button>'
+    + '<button class="sort-btn-main" onclick="openEditCustomer(\''+esc(String(c.id))+'\')"><i class="ti ti-edit"></i> Edit</button>'
+    + '<button class="sort-btn-main text-red" onclick="deleteCustomer(\''+esc(String(c.id))+'\',\''+escJsAttr(c.name)+'\')" title="Delete customer"><i class="ti ti-trash"></i></button>'
     + '</div></div>'
     + '<div class="inbox-detail-meta">'
     + (c.phone?'<div class="inbox-detail-meta-item"><i class="ti ti-phone"></i><strong>'+esc(c.phone)+'</strong></div>':'')
@@ -1670,7 +1762,7 @@ function _showCustomerDetail(customerId) {
     + '</div>';
   if (orderIds.length) {
     html += '<div><div class="inbox-detail-items-hdr"><div class="inbox-detail-items-label">Orders ('+orderIds.length+')</div></div>'
-      + '<div style="display:flex;flex-direction:column;gap:8px">';
+      + '<div class="related-orders-list">';
     orderIds.forEach(function(oid){
       var rows = orderMap.get(oid);
       var first = rows[0];
@@ -1679,11 +1771,11 @@ function _showCustomerDetail(customerId) {
       var bc = 'b-'+status.toLowerCase().replace(' ','-');
       var orderNum = orderNumFromId(oid);
       var catNames = [...new Set(rows.map(function(r){var cat=cats.find(function(c){return String(c.id)===String(r.catId);});return cat?cat.name:null;}).filter(Boolean))].join(', ');
-      html += '<div class="inbox-item-card" style="cursor:pointer" onclick="_switchToOrder(\''+esc(String(oid))+'\')">'
+      html += '<div class="inbox-item-card inbox-item-card-clickable" onclick="_switchToOrder(\''+esc(String(oid))+'\')">'
         + '<div class="inbox-item-left"><div class="inbox-item-qty">'+rows.length+'</div><div class="inbox-item-qty-label">items</div><div class="inbox-item-price">$'+total.toFixed(2)+'</div></div>'
         + '<div class="inbox-item-divider"></div>'
         + '<div class="inbox-item-right"><div class="inbox-item-cat">'+orderNum+' &mdash; '+esc(catNames)+'</div>'
-        + '<div style="margin-top:4px"><span class="'+bc+'" style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:2px">'+status+'</span></div>'
+        + '<div class="related-order-status-wrap"><span class="'+bc+' related-order-status-badge">'+status+'</span></div>'
         + '</div></div>';
     });
     html += '</div></div>';
@@ -1699,21 +1791,122 @@ function _switchToOrder(orderId) {
   setTimeout(function(){showInboxDetail(orderId);}, 80);
 }
 
-// Colours view
-function _renderViewColours() {
-  _setListPane('<div class="inbox-view-header"><span class="inbox-view-title">Colours</span><span class="inbox-view-count">'+colours.filter(function(c){return c.available!==false;}).length+'</span></div>');
+// Inventory view
+function _inventoryReceived(itemId){
+  return inventoryReceipts.filter(function(r){return r.itemId===itemId;}).reduce(function(s,r){return s+r.qty;},0);
+}
+function _inventoryConsumed(itemId){
+  return inventoryConsumption.filter(function(c){return c.itemId===itemId;}).reduce(function(s,c){return s+c.qty;},0);
+}
+function _inventoryAvailable(itemId){
+  return _inventoryReceived(itemId) - _inventoryConsumed(itemId);
+}
+
+function _renderViewInventory(filter) {
+  filter = filter || '';
+  _setListPane(
+    '<div class="view-search-row">'
+    + '<div class="inbox-search-row inbox-search-row-flex">'
+    + '<i class="ti ti-search inbox-search-icon"></i>'
+    + '<input type="text" id="inventoryViewSearch" placeholder="Search inventory…" value="' + esc(filter) + '" oninput="_renderViewInventory(this.value)">'
+    + '</div>'
+    + '<button class="btn success flex-shrink-0" onclick="openAddInventoryItem()"><i class="ti ti-plus"></i> New</button>'
+    + '</div>'
+  );
   var list = document.getElementById('inboxList');
-  if (!colours.length) { list.innerHTML = '<div class="inbox-empty-state"><i class="ti ti-palette"></i> No colours</div>'; return; }
-  list.innerHTML = colours.map(function(c){
-    return '<div class="inbox-card" style="align-items:center;padding:10px 14px">'
-      + '<div style="width:30px;height:30px;border-radius:50%;background:'+esc(c.code)+';border:1px solid rgba(255,255,255,0.1);flex-shrink:0"></div>'
-      + '<div class="inbox-card-content" style="margin-left:2px">'
-      + '<div class="inbox-card-customer">'+esc(c.name)+'</div>'
-      + '<div class="inbox-card-subject" style="font-family:monospace">'+esc(c.code)+'</div>'
+  var q = filter.toLowerCase();
+  var shown = inventoryItems.filter(function(i) {
+    return !q || i.name.toLowerCase().includes(q);
+  });
+  if (!shown.length) { list.innerHTML = '<div class="inbox-empty-state"><i class="ti ti-package"></i> No inventory items</div>'; return; }
+  list.innerHTML = shown.map(function(i) {
+    var isSelected = String(i.id) === String(_selectedInventoryItemId);
+    var available = _inventoryAvailable(i.id);
+    return '<div class="inbox-card' + (isSelected?' selected':'') + '" onclick="_showInventoryDetail(\'' + esc(String(i.id)) + '\')">'
+      + '<div class="inbox-card-content">'
+      + '<div class="inbox-card-row1"><span class="inbox-card-customer">' + esc(i.name) + '</span>'
+      + '<span class="inbox-card-num">' + available + ' available</span>'
       + '</div>'
-      + (c.available===false?'<span class="inbox-card-num" style="color:var(--red)">archived</span>':'')
-      + '</div>';
+      + '<div class="inbox-card-subject">' + (esc(i.notes) || '<em class="text-faint">No notes</em>') + '</div>'
+      + '</div></div>';
   }).join('');
+}
+
+function _showInventoryDetail(itemId) {
+  _selectedInventoryItemId = itemId;
+  document.querySelectorAll('#inboxList .inbox-card').forEach(function(el) {
+    el.classList.toggle('selected', (el.getAttribute('onclick')||'').includes(itemId));
+  });
+  var i = inventoryItems.find(function(x){return String(x.id)===String(itemId);});
+  if (!i) return;
+  var detail = document.getElementById('inboxDetail');
+  if (!detail) return;
+  var received = _inventoryReceived(itemId);
+  var consumed = _inventoryConsumed(itemId);
+  var available = received - consumed;
+  var receipts = inventoryReceipts.filter(function(r){return r.itemId===itemId;}).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+  var consumption = inventoryConsumption.filter(function(c){return c.itemId===itemId;}).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+  var html = '<div class="inbox-detail">'
+    + '<div class="inbox-detail-header">'
+    + '<div class="inbox-detail-header-top">'
+    + '<div class="flex-fill-input">'
+    + '<div class="inbox-detail-customer">' + esc(i.name) + '</div>'
+    + '</div>'
+    + '<button class="sort-btn-main" onclick="openEditInventoryItem(\''+esc(String(i.id))+'\')"><i class="ti ti-edit"></i> Edit</button>'
+    + '<button class="sort-btn-main text-red" onclick="deleteInventoryItem(\''+esc(String(i.id))+'\',\''+escJsAttr(i.name)+'\')" title="Delete item"><i class="ti ti-trash"></i></button>'
+    + '</div></div>'
+    + '<div class="inbox-detail-meta">'
+    + '<div class="inbox-detail-meta-item"><i class="ti ti-package"></i><strong>' + available + ' available</strong></div>'
+    + '<div class="inbox-detail-meta-item"><i class="ti ti-arrow-down"></i><strong>' + received + ' received</strong></div>'
+    + '<div class="inbox-detail-meta-item"><i class="ti ti-arrow-up"></i><strong>' + consumed + ' used</strong></div>'
+    + (i.notes?'<div class="inbox-detail-meta-item"><i class="ti ti-notes"></i><em>'+esc(i.notes)+'</em></div>':'')
+    + '</div>'
+
+    + '<div class="inbox-detail-items-hdr">'
+    + '<div class="inbox-detail-items-label">Receiving Log</div>'
+    + '<button class="sort-btn-main" onclick="showReceiptForm()"><i class="ti ti-plus"></i> Log Receipt</button>'
+    + '</div>'
+    + '<div id="inv-receipt-form" class="new-customer-panel" style="display:none">'
+    + '<div class="field-row">'
+    + '<div class="field"><label>Quantity received *</label><input type="number" id="rcpt-qty" min="1" step="1"></div>'
+    + '<div class="field"><label>Cost per unit</label><input type="number" id="rcpt-cost" min="0" step="0.01" placeholder="0.00"></div>'
+    + '</div>'
+    + '<div class="field"><label>Date</label><input type="date" id="rcpt-date"></div>'
+    + '<div id="rcpt-error" class="field-error-text" style="display:none"></div>'
+    + '<div class="modal-actions">'
+    + '<button class="btn" onclick="hideReceiptForm()">Cancel</button>'
+    + '<button class="btn success" id="rcpt-save" onclick="saveInventoryReceipt(\''+esc(String(i.id))+'\')"><i class="ti ti-check"></i> Log receipt</button>'
+    + '</div></div>'
+    + (receipts.length
+      ? '<div class="related-orders-list">' + receipts.map(function(r){
+          return '<div class="inbox-item-card">'
+            + '<div class="inbox-item-left"><div class="inbox-item-qty">+'+r.qty+'</div><div class="inbox-item-qty-label">units</div>'
+            + (r.cost?'<div class="inbox-item-price">$'+r.cost.toFixed(2)+'/ea</div>':'')
+            + '</div>'
+            + '<div class="inbox-item-divider"></div>'
+            + '<div class="inbox-item-right"><div class="inbox-item-cat">Received</div>'
+            + '<div class="related-order-status-wrap"><span class="text-muted-sm">'+toDisplay(r.date)+'</span></div></div>'
+            + '<div class="inbox-item-actions"><button class="icon-btn" title="Edit" onclick="openEditReceiptForm(\''+esc(String(r.id))+'\')"><i class="ti ti-edit"></i></button></div>'
+            + '</div>';
+        }).join('') + '</div>'
+      : '<div class="inbox-empty-state"><i class="ti ti-truck-delivery"></i> No stock received yet</div>')
+
+    + '<div class="inbox-detail-items-hdr">'
+    + '<div class="inbox-detail-items-label">Usage Log</div>'
+    + '</div>'
+    + (consumption.length
+      ? '<div class="related-orders-list">' + consumption.map(function(c){
+          var orderNum = orderNumFromId(c.orderId);
+          return '<div class="inbox-item-card inbox-item-card-clickable" onclick="_switchToOrder(\''+esc(String(c.orderId))+'\')">'
+            + '<div class="inbox-item-left"><div class="inbox-item-qty">-'+c.qty+'</div><div class="inbox-item-qty-label">units</div></div>'
+            + '<div class="inbox-item-divider"></div>'
+            + '<div class="inbox-item-right"><div class="inbox-item-cat">Order '+orderNum+'</div>'
+            + '<div class="related-order-status-wrap"><span class="text-muted-sm">'+toDisplay(c.date)+'</span></div></div>'
+            + '</div>';
+        }).join('') + '</div>'
+      : '<div class="inbox-empty-state"><i class="ti ti-package-off"></i> Not used by any completed order yet</div>')
+    + '</div>';
+  detail.innerHTML = html;
 }
 
 // Categories view
@@ -1725,8 +1918,8 @@ function _renderViewCategories() {
   list.innerHTML = active.map(function(c){
     var catOpts = opts.filter(function(o){return String(o.catId)===String(c.id)&&!o.archived;});
     var ordCount = new Set(orders.filter(function(r){return String(r.catId)===String(c.id);}).map(function(r){return r.orderId;})).size;
-    return '<div class="inbox-card" style="padding:12px 14px">'
-      + '<div class="inbox-card-avatar" style="background:var(--surface2);color:var(--muted);border:1px solid var(--border);font-size:14px"><i class="ti ti-category"></i></div>'
+    return '<div class="inbox-card">'
+      + '<div class="inbox-card-avatar inbox-card-avatar-icon"><i class="ti ti-category"></i></div>'
       + '<div class="inbox-card-content">'
       + '<div class="inbox-card-row1"><span class="inbox-card-customer">'+esc(c.name)+'</span><span class="inbox-card-num">$'+c.price.toFixed(2)+'</span></div>'
       + '<div class="inbox-card-subject">'+catOpts.length+' option'+(catOpts.length!==1?'s':'')+'</div>'
@@ -1739,7 +1932,8 @@ function _renderViewCategories() {
 function _renderViewStats() {
   _setListPane('<div class="inbox-view-header"><span class="inbox-view-title">Stats</span></div>');
   var pending = orders.filter(function(r){return (r.status||'Pending')==='Pending';});
-  var printing = orders.filter(function(r){return r.status==='Printing';});
+  var confirmed = orders.filter(function(r){return r.status==='Confirmed';});
+  var printed = orders.filter(function(r){return r.status==='Printed';});
   var complete = orders.filter(function(r){return r.status==='Complete';});
   var revenueOrderIds = new Set();
   var revenue = orders.filter(function(r){var p=paymentOptions.find(function(p){return p.name===r.payment;});return p&&p.showRevenue;}).reduce(function(s,r){
@@ -1752,12 +1946,13 @@ function _renderViewStats() {
   },0);
   var uniqueOrders = new Set(orders.map(function(r){return r.orderId;})).size;
   var detail = document.getElementById('inboxDetail');
-  if (detail) detail.innerHTML = '<div class="inbox-detail" style="max-width:600px">'
+  if (detail) detail.innerHTML = '<div class="inbox-detail inbox-detail-narrow-600">'
     + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">Stats</div></div></div>'
-    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">'
+    + '<div class="stats-grid-2col">'
     + _statCard('Orders', uniqueOrders, 'ti-shopping-cart', '')
     + _statCard('Pending', new Set(pending.map(function(r){return r.orderId;})).size, 'ti-clock', 'var(--amber)')
-    + _statCard('Printing', new Set(printing.map(function(r){return r.orderId;})).size, 'ti-printer', 'var(--blue)')
+    + _statCard('Confirmed', new Set(confirmed.map(function(r){return r.orderId;})).size, 'ti-circle-check', 'var(--blue)')
+    + _statCard('Printed', new Set(printed.map(function(r){return r.orderId;})).size, 'ti-printer', 'var(--teal)')
     + _statCard('Complete', new Set(complete.map(function(r){return r.orderId;})).size, 'ti-check', 'var(--green)')
     + _statCard('Revenue', '$'+revenue.toFixed(2), 'ti-currency-dollar', 'var(--green)')
     + _statCard('Customers', customers.length, 'ti-users', '')
@@ -1769,22 +1964,22 @@ function _renderViewStats() {
   var list = document.getElementById('inboxList');
   var max = catBreakdown.length ? catBreakdown[0].n : 1;
   list.innerHTML = catBreakdown.map(function(x){
-    return '<div class="inbox-card" style="padding:12px 14px">'
+    return '<div class="inbox-card">'
       + '<div class="inbox-card-content">'
       + '<div class="inbox-card-row1"><span class="inbox-card-customer">'+esc(x.name)+'</span><span class="inbox-card-num">'+x.n+'</span></div>'
-      + '<div style="height:4px;background:var(--border);border-radius:2px;margin-top:8px">'
-      + '<div style="height:4px;background:var(--accent);border-radius:2px;width:'+Math.round(x.n/max*100)+'%"></div>'
+      + '<div class="stat-bar-track">'
+      + '<div class="stat-bar-fill" style="width:'+Math.round(x.n/max*100)+'%"></div>'
       + '</div></div></div>';
   }).join('') || '<div class="inbox-empty-state"><i class="ti ti-chart-bar"></i> No data</div>';
 }
 
 function _statCard(label, val, icon, color) {
-  return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;display:flex;flex-direction:column;gap:6px">'
-    + '<div style="display:flex;align-items:center;gap:8px;color:'+(color||'var(--muted)')+'">'
-    + '<i class="ti '+icon+'" style="font-size:18px"></i>'
-    + '<span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">'+label+'</span>'
+  return '<div class="stat-card">'
+    + '<div class="stat-card-icon-row" style="--sc:'+(color||'var(--muted)')+'">'
+    + '<i class="ti '+icon+' stat-card-icon"></i>'
+    + '<span class="stat-card-label">'+label+'</span>'
     + '</div>'
-    + '<div style="font-size:24px;font-weight:700;color:var(--text)">'+val+'</div>'
+    + '<div class="stat-card-value">'+val+'</div>'
     + '</div>';
 }
 
@@ -1793,11 +1988,11 @@ var _selectedSettingsCat = null;
 var _deliveryReorderMode = false;
 var _paymentReorderMode = false;
 var _SETTINGS_CATS = [
-  {id:'payment',  icon:'ti-credit-card', title:'Post and Pay',         desc:'Manage delivery methods and payment methods'},
+  {id:'payment',  icon:'ti-credit-card', title:'Post & Pay',           desc:'Manage delivery methods and payment methods'},
   {id:'cats',     icon:'ti-category',    title:'Categories & Options',  desc:'Product categories and their options'},
   {id:'colours',  icon:'ti-brush',       title:'Colour Library',        desc:'Available colour swatches'},
   {id:'users',    icon:'ti-users',       title:'Users',                 desc:'Invite and manage app users'},
-  {id:'app',      icon:'ti-settings',    title:'App Settings',          desc:'Notifications, accent colour and more'},
+  {id:'app',      icon:'ti-settings',    title:'App Settings',          desc:'Profile, password and notifications'},
 ];
 
 function _renderViewSettings() {
@@ -1807,7 +2002,7 @@ function _renderViewSettings() {
     var sel = cat.id === _selectedSettingsCat;
     return '<div class="inbox-card' + (sel?' selected':'') + '" onclick="_showSettingsDetail(\'' + cat.id + '\')">'
       + '<div class="inbox-card-content">'
-      + '<div class="inbox-card-row1"><span class="inbox-card-customer"><i class="ti ' + cat.icon + '" style="margin-right:7px;opacity:0.7"></i>' + cat.title + '</span></div>'
+      + '<div class="inbox-card-row1"><span class="inbox-card-customer"><i class="ti ' + cat.icon + ' settings-cat-icon"></i>' + cat.title + '</span></div>'
       + '<div class="inbox-card-subject">' + cat.desc + '</div>'
       + '</div></div>';
   }).join('');
@@ -1825,16 +2020,16 @@ function _showSettingsDetail(catId) {
   if (catId === 'cats') {
     detail.innerHTML = '<div class="inbox-detail">'
       + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">Categories &amp; Options</div></div></div>'
-      + '<p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">Each category can have options — extra fields shown when adding an item. Drag <i class="ti ti-grip-vertical" style="font-size:12px"></i> to reorder options.</p>'
-      + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'
-      + '<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer">'
+      + '<p class="settings-desc-text">Each category can have options — extra fields shown when adding an item. Drag <i class="ti ti-grip-vertical icon-sm"></i> to reorder options.</p>'
+      + '<div class="cats-toolbar-row">'
+      + '<label class="show-archived-label">'
       + '<input type="checkbox" id="showArchivedCb" onchange="toggleShowArchived(this)"> Show archived'
       + '</label>'
-      + '<button class="btn sm" style="margin-left:auto" onclick="addCat()"><i class="ti ti-plus"></i> Add category</button>'
+      + '<button class="btn success sm ml-auto" onclick="addCat()"><i class="ti ti-plus"></i> Add category</button>'
       + '</div>'
       + '<div id="catFlatList"></div>'
-      + '<div style="display:flex;gap:8px;margin-top:12px">'
-      + '<button class="btn primary" onclick="saveCatsAndOpts()"><i class="ti ti-cloud-upload"></i> Save</button>'
+      + '<div class="settings-actions-row">'
+      + '<button class="btn success" onclick="saveCatsAndOpts()"><i class="ti ti-cloud-upload"></i> Save</button>'
       + '</div></div>';
     if(typeof renderCatBlocks === 'function') {
       var cb = document.getElementById('showArchivedCb');
@@ -1844,25 +2039,25 @@ function _showSettingsDetail(catId) {
   } else if (catId === 'colours') {
     detail.innerHTML = '<div class="inbox-detail">'
       + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">Colour Library</div></div></div>'
-      + '<p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">Manage your available filament colours. Tick <strong style="color:var(--text)">Available</strong> if you currently have that colour in stock.</p>'
-      + '<div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:10px">'
-      + '<button class="btn sm" onclick="addColour()"><i class="ti ti-plus"></i> Add colour</button>'
+      + '<p class="settings-desc-text">Manage your available filament colours. Tick <strong class="text-emphasis">Available</strong> if you currently have that colour in stock.</p>'
+      + '<div class="settings-toolbar-row-end">'
+      + '<button class="btn success sm" onclick="addColour()"><i class="ti ti-plus"></i> Add colour</button>'
       + '</div>'
       + '<div class="colour-mgr-hdr"><span>Swatch</span><span>Name</span><span>Hex code</span><span>Available</span><span></span></div>'
       + '<div id="colourList"></div>'
-      + '<div style="display:flex;gap:8px;margin-top:12px">'
-      + '<button class="btn primary" onclick="saveColours()"><i class="ti ti-cloud-upload"></i> Save</button>'
+      + '<div class="settings-actions-row">'
+      + '<button class="btn success" onclick="saveColours()"><i class="ti ti-cloud-upload"></i> Save</button>'
       + '</div></div>';
     if(typeof renderColourList === 'function') renderColourList();
   } else if (catId === 'users') {
     detail.innerHTML = '<div class="inbox-detail">'
       + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">Users</div></div></div>'
-      + '<p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">Invite team members to PrintDesk. They will receive an email to set their password.</p>'
-      + '<div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:10px">'
-      + '<button class="btn sm" onclick="openAddUserForm()"><i class="ti ti-plus"></i> Add user</button>'
+      + '<p class="settings-desc-text">Invite team members to PrintDesk. They will receive an email to set their password.</p>'
+      + '<div class="settings-toolbar-row-end">'
+      + '<button class="btn success sm" onclick="openAddUserForm()"><i class="ti ti-plus"></i> Add user</button>'
       + '</div>'
       + '<div id="userForm" style="display:none">'
-      + '<div style="background:var(--surface2);border-radius:var(--radius-lg);padding:14px;margin-bottom:14px">'
+      + '<div class="user-form-inner">'
       + '<div class="field-row">'
       + '<div class="field"><label>Display name</label><input type="text" id="uf-name" placeholder="Their name"></div>'
       + '<div class="field"><label>Email</label><input type="email" id="uf-email" placeholder="user@example.com"></div>'
@@ -1870,18 +2065,18 @@ function _showSettingsDetail(catId) {
       + '<div class="field-row" id="uf-password-row" style="display:none">'
       + '<div class="field"><label>New password</label><input type="password" id="uf-password" placeholder="Leave blank to keep current"></div>'
       + '</div>'
-      + '<div id="uf-error" style="font-size:11px;color:var(--red);margin-top:4px;display:none"></div>'
-      + '<div style="display:flex;gap:8px;margin-top:10px">'
+      + '<div id="uf-error" class="field-error-text" style="display:none"></div>'
+      + '<div class="user-form-actions">'
       + '<button class="btn" onclick="closeUserForm()">Cancel</button>'
-      + '<button class="btn primary" id="uf-save" onclick="saveUser()"><i class="ti ti-mail"></i> Send invite</button>'
+      + '<button class="btn success" id="uf-save" onclick="saveUser()"><i class="ti ti-mail"></i> Send invite</button>'
       + '</div></div></div>'
-      + '<div id="usersList"><div style="padding:16px;color:var(--muted)"><i class="ti ti-loader-2"></i> Loading users…</div></div>'
+      + '<div id="usersList"><div class="users-loading-placeholder"><i class="ti ti-loader-2"></i> Loading users…</div></div>'
       + '</div>';
     if(typeof loadUsers === 'function') { window.editingUserId = null; loadUsers(); }
   } else if (catId === 'payment') {
     var deliveryRows = deliveryOptions.map(function(d, i) {
       return '<div' + (_deliveryReorderMode ? ' draggable="true" ondragstart="_reorderDragStart(event,\'delivery\',' + i + ')" ondragover="_reorderDragOver(event,\'delivery\',' + i + ')" ondrop="_reorderDrop(event,\'delivery\',' + i + ')" ondragleave="_reorderDragLeave(event)" ondragend="_reorderDragEnd(event)"' : '')
-        + ' style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border)">'
+        + ' class="settings-list-row">'
         + (_deliveryReorderMode ? '<span class="opt-drag"><i class="ti ti-grip-vertical"></i></span>' : '')
         + '<div class="icon-picker-wrap">'
         + '<button class="icon-picker-btn" onclick="event.stopPropagation();toggleDeliveryIconPicker(' + i + ',this)" title="Change icon" ' + (d.archived?'disabled':'') + '><i class="ti ' + (d.icon||'ti-truck-delivery') + '"></i></button>'
@@ -1891,30 +2086,30 @@ function _showSettingsDetail(catId) {
           }).join('')
         + '</div>'
         + '</div>'
-        + '<span style="flex:1;font-weight:500;' + (_deliveryReorderMode?'padding-left:6px;':'') + 'color:' + (d.archived?'var(--muted)':'var(--text)') + (d.archived?';text-decoration:line-through':'') + '">' + esc(d.name) + '</span>'
+        + '<span class="settings-list-name' + (_deliveryReorderMode?' reorder-indent':'') + (d.archived?' text-muted strikethrough':'') + '">' + esc(d.name) + '</span>'
         + '<div class="cat-price-wrap"><span>$</span><input type="number" class="ns-init" value="' + d.price.toFixed(2) + '" step="0.01" min="0" ' + (d.archived?'disabled':'') + ' onchange="_settingsSetDeliveryPrice(' + i + ',this.value)"></div>'
         + '<button class="btn sm" onclick="_settingsToggleDeliveryArchive(' + i + ')" title="' + (d.archived?'Restore':'Archive') + '"><i class="ti ti-' + (d.archived?'eye':'eye-off') + '"></i></button>'
         + '</div>';
     }).join('');
     var rows = paymentOptions.map(function(p, i) {
       return '<div' + (_paymentReorderMode ? ' draggable="true" ondragstart="_reorderDragStart(event,\'payment\',' + i + ')" ondragover="_reorderDragOver(event,\'payment\',' + i + ')" ondrop="_reorderDrop(event,\'payment\',' + i + ')" ondragleave="_reorderDragLeave(event)" ondragend="_reorderDragEnd(event)"' : '')
-        + ' style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border)">'
+        + ' class="settings-list-row">'
         + (_paymentReorderMode ? '<span class="opt-drag"><i class="ti ti-grip-vertical"></i></span>' : '')
-        + '<span style="flex:1;font-weight:500;' + (_paymentReorderMode?'padding-left:6px;':'') + 'color:' + (p.archived?'var(--muted)':'var(--text)') + (p.archived?';text-decoration:line-through':'') + '">' + esc(p.name) + '</span>'
-        + '<span style="font-size:10px;color:var(--muted);padding:2px 7px;background:var(--surface2);border-radius:10px">' + (p.showRevenue?'revenue':'no revenue') + '</span>'
+        + '<span class="settings-list-name' + (_paymentReorderMode?' reorder-indent':'') + (p.archived?' text-muted strikethrough':'') + '">' + esc(p.name) + '</span>'
+        + '<span class="revenue-badge">' + (p.showRevenue?'revenue':'no revenue') + '</span>'
         + '<button class="btn sm" onclick="_settingsToggleRevenue(' + i + ')" title="Toggle revenue tracking"><i class="ti ti-currency-dollar"></i></button>'
         + '<button class="btn sm" onclick="_settingsToggleArchive(' + i + ')" title="' + (p.archived?'Restore':'Archive') + '"><i class="ti ti-' + (p.archived?'eye':'eye-off') + '"></i></button>'
         + '</div>';
     }).join('');
     detail.innerHTML = '<div class="inbox-detail">'
-      + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">Post and Pay</div></div></div>'
-      + '<div class="settings-section-title" style="margin-bottom:6px">Delivery Methods</div>'
-      + '<p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">Manage how orders are delivered, and the price for each method.</p>'
-      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
+      + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">Post &amp; Pay</div></div></div>'
+      + '<div class="settings-section-title settings-section-title-tight">Delivery Methods</div>'
+      + '<p class="settings-desc-text">Manage how orders are delivered, and the price for each method.</p>'
+      + '<div class="settings-section-header-row">'
       + '<button class="btn sm' + (_deliveryReorderMode?' primary':'') + '" onclick="_toggleDeliveryReorder()"><i class="ti ti-arrows-sort"></i> ' + (_deliveryReorderMode?'Done':'Reorder') + '</button>'
-      + '<button class="btn sm" onclick="_settingsAddDelivery()"><i class="ti ti-plus"></i> Add Method</button>'
+      + '<button class="btn success sm" onclick="_settingsAddDelivery()"><i class="ti ti-plus"></i> Add Method</button>'
       + '</div>'
-      + '<div id="deliveryAddForm" style="display:none;gap:8px;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;margin-bottom:10px">'
+      + '<div id="deliveryAddForm" class="settings-add-form-row" style="display:none">'
       + '<div class="icon-picker-wrap">'
       + '<button class="icon-picker-btn" id="da-icon-btn" onclick="event.stopPropagation();toggleDeliveryIconPicker(\'new\',this)" title="Change icon"><i class="ti ' + _daNewIcon + '"></i></button>'
       + '<div class="icon-picker-list" id="dip-new" style="display:none">'
@@ -1923,30 +2118,30 @@ function _showSettingsDetail(catId) {
         }).join('')
       + '</div>'
       + '</div>'
-      + '<input type="text" id="da-name" placeholder="Delivery method name&hellip;" onkeydown="if(event.key===\'Enter\')_settingsSaveDelivery()" style="flex:1;height:30px;padding:0 8px;font-size:12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg);color:var(--text);outline:none">'
+      + '<input type="text" id="da-name" placeholder="Delivery method name&hellip;" onkeydown="if(event.key===\'Enter\')_settingsSaveDelivery()" class="settings-add-input">'
       + '<div class="cat-price-wrap"><span>$</span><input type="number" id="da-price" class="ns-init" value="0.00" step="0.01" min="0" onkeydown="if(event.key===\'Enter\')_settingsSaveDelivery()"></div>'
       + '<button class="btn sm" onclick="_settingsCancelAddDelivery()">Cancel</button>'
       + '<button class="btn sm primary" onclick="_settingsSaveDelivery()"><i class="ti ti-check"></i> Add</button>'
       + '</div>'
-      + '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:20px">' + deliveryRows + '</div>'
-      + '<div class="settings-section-title" style="margin-bottom:6px">Payment</div>'
-      + '<p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">Manage how customers pay. Enable <strong style="color:var(--text)">revenue</strong> on a method to include it in sales totals.</p>'
-      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
+      + '<div class="settings-list-box mb-20">' + deliveryRows + '</div>'
+      + '<div class="settings-section-title settings-section-title-tight">Payment</div>'
+      + '<p class="settings-desc-text">Manage how customers pay. Enable <strong class="text-emphasis">revenue</strong> on a method to include it in sales totals.</p>'
+      + '<div class="settings-section-header-row">'
       + '<button class="btn sm' + (_paymentReorderMode?' primary':'') + '" onclick="_togglePaymentReorder()"><i class="ti ti-arrows-sort"></i> ' + (_paymentReorderMode?'Done':'Reorder') + '</button>'
-      + '<button class="btn sm" onclick="_settingsAddPayment()"><i class="ti ti-plus"></i> Add Option</button>'
+      + '<button class="btn success sm" onclick="_settingsAddPayment()"><i class="ti ti-plus"></i> Add Option</button>'
       + '</div>'
-      + '<div id="paymentAddForm" style="display:none;gap:8px;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;margin-bottom:10px">'
-      + '<input type="text" id="pa-name" placeholder="Payment option name&hellip;" onkeydown="if(event.key===\'Enter\')_settingsSavePayment()" style="flex:1;height:30px;padding:0 8px;font-size:12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg);color:var(--text);outline:none">'
-      + '<label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);white-space:nowrap;cursor:pointer"><input type="checkbox" id="pa-revenue" style="accent-color:var(--accent)"> Revenue</label>'
+      + '<div id="paymentAddForm" class="settings-add-form-row" style="display:none">'
+      + '<input type="text" id="pa-name" placeholder="Payment option name&hellip;" onkeydown="if(event.key===\'Enter\')_settingsSavePayment()" class="settings-add-input">'
+      + '<label class="revenue-checkbox-label"><input type="checkbox" id="pa-revenue" class="accent-checkbox"> Revenue</label>'
       + '<button class="btn sm" onclick="_settingsCancelAddPayment()">Cancel</button>'
       + '<button class="btn sm primary" onclick="_settingsSavePayment()"><i class="ti ti-check"></i> Add</button>'
       + '</div>'
-      + '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden">' + rows + '</div>'
+      + '<div class="settings-list-box">' + rows + '</div>'
       + '</div>';
   } else if (catId === 'app') {
     detail.innerHTML = '<div class="inbox-detail">'
       + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">App Settings</div></div></div>'
-      + '<p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">Manage your account details, appearance, and notification preferences.</p>'
+      + '<p class="settings-desc-text">Manage your account details and notification preferences.</p>'
 
       + '<div class="settings-section"><div class="settings-section-title">Profile</div>'
       + '<div class="field-row">'
@@ -1959,78 +2154,48 @@ function _showSettingsDetail(catId) {
       + '<div class="field"><label>New password</label><input type="password" id="settingsPassword" placeholder="Leave blank to keep current"></div>'
       + '<div class="field"><label>Confirm password</label><input type="password" id="settingsPasswordConfirm" placeholder="Repeat new password"></div>'
       + '</div>'
-      + '<div id="settingsPasswordError" style="font-size:11px;color:var(--red);margin-top:4px;display:none"></div>'
-      + '</div>'
-
-      + '<div class="settings-section"><div class="settings-section-title">Appearance</div>'
-      + '<div style="background:var(--surface2);border-radius:var(--radius-lg);padding:10px 14px">'
-      + '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:4px">'
-      + '<input type="checkbox" id="settingsStylish" onchange="applyStylish(this.checked)" style="accent-color:var(--accent);width:14px;height:14px">'
-      + '<span style="font-size:12px;font-weight:500">Stylish</span>'
-      + '</label>'
-      + '<div style="font-size:11px;color:var(--muted);padding-left:22px">Rounded 3D item cards. Turn off for a flat, plain table view.</div>'
-      + '</div>'
-      + '</div>'
-
-      + '<div class="settings-section"><div class="settings-section-title">Accent colour</div>'
-      + '<div class="field"><label>Choose from your filament colours</label>'
-      + '<div class="colour-picker-wrap" id="accentPickerWrap">'
-      + '<div class="colour-picker-btn" onclick="toggleColourPicker(\'accent-sel\')" id="cpb-accent-sel">'
-      + '<div class="cp-swatch" id="accent-sel-swatch" style="background:var(--accent)"></div>'
-      + '<span class="cp-label" id="accent-sel-label">Loading…</span>'
-      + '<i class="ti ti-chevron-down cp-arrow"></i>'
-      + '</div>'
-      + '<div class="colour-picker-list" id="cpl-accent-sel" style="display:none">'
-      + '<div class="cp-none" onclick="selectAccentColour(\'\',\'\',this)">— none / custom —</div>'
-      + '</div></div></div>'
-      + '<input type="color" id="customColour" style="display:none" oninput="previewAccent(this.value)">'
+      + '<div id="settingsPasswordError" class="field-error-text" style="display:none"></div>'
       + '</div>'
 
       + '<div class="settings-section"><div class="settings-section-title">Notifications</div>'
-      + '<p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7">Email alerts for new orders. Requires a free <strong style="color:var(--text)">Resend</strong> account.</p>'
-      + '<div class="field" style="margin-bottom:12px"><label>Notification email</label><input type="email" id="settingsNotifyEmail" placeholder="you@example.com"></div>'
-      + '<div style="display:flex;flex-direction:column;gap:8px">'
-      + '<div style="background:var(--surface2);border-radius:var(--radius-lg);padding:10px 14px">'
-      + '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:4px">'
-      + '<input type="checkbox" id="settingsNotifyDaily" style="accent-color:var(--accent);width:14px;height:14px">'
-      + '<span style="font-size:12px;font-weight:500">Daily badge digest — 4PM Melbourne</span>'
+      + '<p class="settings-desc-text">Email alerts for new orders. Requires a free <strong class="text-emphasis">Resend</strong> account.</p>'
+      + '<div class="field field-mb-12"><label>Notification email</label><input type="email" id="settingsNotifyEmail" placeholder="you@example.com"></div>'
+      + '<div class="settings-toggle-stack">'
+      + '<div class="settings-toggle-box">'
+      + '<label class="settings-toggle-label">'
+      + '<input type="checkbox" id="settingsNotifyDaily" class="settings-checkbox">'
+      + '<span class="settings-toggle-title">Daily badge digest — 4PM Melbourne</span>'
       + '</label>'
-      + '<div style="font-size:11px;color:var(--muted);padding-left:22px">Sends a summary email if any badge orders were added that day.</div>'
+      + '<div class="settings-toggle-hint">Sends a summary email if any badge orders were added that day.</div>'
       + '</div>'
-      + '<div style="background:var(--surface2);border-radius:var(--radius-lg);padding:10px 14px">'
-      + '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:4px;flex-wrap:wrap">'
-      + '<input type="checkbox" id="settingsNotifyThreshold" style="accent-color:var(--accent);width:14px;height:14px">'
-      + '<span style="font-size:12px;font-weight:500">Urgent alert when</span>'
-      + '<input type="number" id="settingsNotifyCount" value="5" min="1" max="99" style="width:48px;height:26px;padding:0 6px;font-size:12px;border-radius:var(--radius);border:none;background:var(--bg);color:var(--text);text-align:center">'
-      + '<span style="font-size:12px;font-weight:500">or more items added</span>'
+      + '<div class="settings-toggle-box">'
+      + '<label class="settings-toggle-label settings-toggle-label-wrap">'
+      + '<input type="checkbox" id="settingsNotifyThreshold" class="settings-checkbox">'
+      + '<span class="settings-toggle-title">Urgent alert when</span>'
+      + '<input type="number" id="settingsNotifyCount" value="5" min="1" max="99" class="notify-count-input">'
+      + '<span class="settings-toggle-title">or more items added</span>'
       + '</label>'
-      + '<div style="font-size:11px;color:var(--muted);padding-left:22px">Checks every 15 minutes.</div>'
+      + '<div class="settings-toggle-hint">Checks every 15 minutes.</div>'
       + '</div>'
-      + '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:var(--surface2);border-radius:var(--radius)">'
-      + '<span style="font-size:12px;color:var(--muted)">Last alert sent</span>'
-      + '<span id="settingsNotifyLastSent" style="font-size:12px;color:var(--text)">—</span>'
+      + '<div class="last-alert-row">'
+      + '<span class="text-muted-12">Last alert sent</span>'
+      + '<span id="settingsNotifyLastSent" class="text-emphasis-12">—</span>'
       + '</div>'
       + '</div></div>'
 
-      + '<div style="display:flex;gap:8px;margin-top:8px">'
-      + '<button class="btn primary" id="settingsSaveBtn" onclick="applySettings()"><i class="ti ti-cloud-upload"></i> Save</button>'
+      + '<div class="settings-actions-row settings-actions-row-tight">'
+      + '<button class="btn success" id="settingsSaveBtn" onclick="applySettings()"><i class="ti ti-cloud-upload"></i> Save</button>'
       + '</div>'
       + '</div>';
 
-    if(typeof openSettings === 'function') {
-      if(window.currentUser){
-        document.getElementById('settingsEmail').value = window.currentUser.email||'';
-        document.getElementById('settingsName').value = (window.currentUser.user_metadata||{}).display_name||'';
-      }
-      document.getElementById('settingsPassword').value = '';
-      document.getElementById('settingsPasswordConfirm').value = '';
-      document.getElementById('settingsPasswordError').style.display = 'none';
-      document.getElementById('settingsStylish').checked = localStorage.getItem('pd_stylish')!=='false';
-      if(typeof buildAccentSwatches==='function') buildAccentSwatches();
-      var s = localStorage.getItem('pd_accent');
-      if(s){try{document.getElementById('customColour').value=JSON.parse(s).a;}catch(e){}}
-      if(typeof loadNotificationSettings==='function') loadNotificationSettings();
+    if(window.currentUser){
+      document.getElementById('settingsEmail').value = window.currentUser.email||'';
+      document.getElementById('settingsName').value = (window.currentUser.user_metadata||{}).display_name||'';
     }
+    document.getElementById('settingsPassword').value = '';
+    document.getElementById('settingsPasswordConfirm').value = '';
+    document.getElementById('settingsPasswordError').style.display = 'none';
+    loadNotificationSettings();
   }
 }
 
@@ -2141,15 +2306,6 @@ function _reorderDrop(e, arrName, idx) {
 }
 
 // Users view
-function _renderViewUsers() {
-  _setListPane('<div class="inbox-view-header"><span class="inbox-view-title">Users</span></div>');
-  var detail = document.getElementById('inboxDetail');
-  if (detail) detail.innerHTML = '<div class="inbox-detail" style="max-width:560px">'
-    + '<div class="inbox-detail-header"><div class="inbox-detail-header-top"><div class="inbox-detail-customer">Users</div></div></div>'
-    + '<div><button class="btn sm" onclick="openUsersModal()"><i class="ti ti-users"></i> Manage Users</button></div>'
-    + '</div>';
-}
-
 function _applyDetailFilters() {
   var q = (window._itemSearch || '').toLowerCase().trim();
   var sort = window._itemSort || 'default';
@@ -2159,12 +2315,9 @@ function _applyDetailFilters() {
   var list = document.querySelector('.inbox-items-list');
   if (!list) return;
   var cards = Array.from(list.querySelectorAll('.inbox-item-card'));
-  var total = cards.length;
-  var shown = 0;
   cards.forEach(function(card) {
     var vis = (!q || (card.dataset.search||'').includes(q)) && (!unchecked.size || !unchecked.has(card.dataset.catname));
     card.style.display = vis ? '' : 'none';
-    if (vis) shown++;
   });
   var sorted = sort === 'default'
     ? cards.slice().sort(function(a,b){return parseInt(a.dataset.idx||0)-parseInt(b.dataset.idx||0);})
@@ -2177,9 +2330,6 @@ function _applyDetailFilters() {
         return 0;
       });
   sorted.forEach(function(c){list.appendChild(c);});
-  var isFiltered = q || unchecked.size;
-  var lbl = document.getElementById('detailItemsLabel');
-  if (lbl) lbl.textContent = isFiltered ? 'Items (' + shown + ' / ' + total + ')' : 'Items (' + total + ')';
   var clr = document.getElementById('detailItemsClear');
   if (clr) clr.style.display = q ? 'block' : 'none';
   var fc = document.getElementById('detailFilterCount');

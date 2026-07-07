@@ -36,15 +36,6 @@ function getActiveDeliveryOptions(){
   return deliveryOptions.filter(d=>!d.archived);
 }
 
-function openCatModal(){
-  // Sync checkbox state
-  const cb = document.getElementById('showArchivedCb');
-  if(cb) cb.checked = showArchivedCats;
-  renderCatBlocks();
-  document.getElementById('catModal').classList.add('open');
-}
-function closeCatModal(){document.getElementById('catModal').classList.remove('open');}
-
 function getCatOpts_byCatId(catId){
   return opts.filter(o=>String(o.catId)===String(catId));
 }
@@ -76,8 +67,8 @@ function renderCatBlocks(){
     const isUsed=usedCatIds.has(c.id);
     const canDelete=!isUsed&&!c.archived;
     return `<div class="cat-block${c.archived?' cat-archived':''}" data-ci="${realCi}">
-      <div class="cat-block-hdr" onclick="toggleCatBlock(${realCi})" style="cursor:pointer">
-        <i class="ti ti-chevron-right cat-chevron${isExpanded?' expanded':''}" style="font-size:14px;color:var(--muted);flex-shrink:0;transition:transform 0.15s"></i>
+      <div class="cat-block-hdr" onclick="toggleCatBlock(${realCi})">
+        <i class="ti ti-chevron-right cat-chevron${isExpanded?' expanded':''}"></i>
         <input type="text" value="${esc(c.name)}" placeholder="Category name" oninput="cats[${realCi}].name=this.value" onclick="event.stopPropagation()" ${c.archived?'disabled':''}>
         <div class="cat-price-wrap">
           <span>$</span>
@@ -116,19 +107,19 @@ function renderCatBlocks(){
               ${o.display==='text'?`<div class="opt-type-extra">
                 <label class="opt-extra-label" title="Force all caps">
                   <input type="checkbox" ${o.force_caps?'checked':''} onchange="opts[${globalIdx}].force_caps=this.checked"
-                    style="width:13px;height:13px;accent-color:var(--accent);cursor:pointer;margin:0">
+                    class="opt-checkbox-sm">
                   Caps
                 </label>
                 <label class="opt-extra-label" title="Comma-separated values create multiple order items">
                   <input type="checkbox" ${o.multi_item?'checked':''} onchange="opts[${globalIdx}].multi_item=this.checked"
-                    style="width:13px;height:13px;accent-color:var(--accent);cursor:pointer;margin:0">
+                    class="opt-checkbox-sm">
                   Multi
                 </label>
               </div>`:''}
             </div>
             <label class="opt-extra-label" title="Show this option in the item sort menu">
               <input type="checkbox" ${o.sortable?'checked':''} onchange="opts[${globalIdx}].sortable=this.checked"
-                style="width:13px;height:13px;accent-color:var(--accent);cursor:pointer;margin:0">
+                class="opt-checkbox-sm">
               Sort
             </label>
             ${o.archived
@@ -144,7 +135,7 @@ function renderCatBlocks(){
           </div>`;
         }).join('')}
         <button class="add-opt-btn" onclick="addOptToCat('${esc(c.id)}')">
-          <i class="ti ti-plus" style="font-size:11px"></i> Add option
+          <i class="ti ti-plus icon-11"></i> Add option
         </button>
       </div>
     </div>`;
@@ -192,7 +183,7 @@ function addOptToCat(catId){
 }
 
 async function saveCatsAndOpts(){
-  setStatus('spin','Saving…');closeCatModal();populateCatFilter();
+  setStatus('spin','Saving…');populateCatFilter();
   try{
     await sbReplace('categories', cats.map(c=>({id:c.id,name:c.name,price:c.price,archived:c.archived||false})));
     await sbReplace('options', opts.map((o,i)=>({id:o.id,cat_id:o.catId,name:o.name,display:o.display,options:o.options,sort_order:i,num_colours:o.num_colours||4,force_caps:o.force_caps||false,multi_item:o.multi_item||false,sortable:o.sortable||false,archived:o.archived||false})));
@@ -296,23 +287,15 @@ function applyComboToLayers(idx, optId, comboKey){
 // ── Users modal ────────────────────────────────────────────
 let editingUserId = null;
 
-function openUsersModal(){
-  editingUserId = null;
-  document.getElementById('userForm').style.display = 'none';
-  document.getElementById('usersModal').classList.add('open');
-  loadUsers();
-}
-function closeUsersModal(){ document.getElementById('usersModal').classList.remove('open'); }
-
 async function loadUsers(){
   const el = document.getElementById('usersList');
   // Warn if service key not set
   if(!getCfg('SUPABASE_SERVICE_KEY')){
-    el.innerHTML = `<div class="empty" style="color:var(--amber)">
+    el.innerHTML = `<div class="empty empty-warn">
       <i class="ti ti-alert-triangle"></i>
-      <div style="margin-top:8px;font-size:12px;line-height:1.6">
+      <div class="service-key-hint">
         Service key not set. Run this in your browser console once:<br>
-        <code style="font-size:11px;background:var(--surface2);padding:4px 8px;border-radius:4px;display:inline-block;margin-top:6px">
+        <code class="service-key-code">
           localStorage.setItem('pd_SUPABASE_SERVICE_KEY', 'your-key')
         </code>
       </div>
@@ -353,23 +336,18 @@ function renderUserCard(u, isCurrentUser){
     : u.invited_at
       ? new Date(u.invited_at).toLocaleDateString('en-AU')
       : new Date(u.created_at).toLocaleDateString('en-AU');
-  const dateColour = hasSignedIn ? '' : 'color:var(--amber)';
-  return `<div style="display:flex;align-items:center;justify-content:space-between;
-    padding:10px 12px;background:var(--surface2);border:1px solid var(--border);
-    border-radius:var(--radius-lg);margin-bottom:8px">
-    <div style="display:flex;align-items:center;gap:12px">
-      <div style="width:36px;height:36px;border-radius:50%;background:rgba(232,213,163,0.15);
-        border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;
-        font-size:14px;font-weight:600;color:var(--accent);flex-shrink:0">
+  return `<div class="user-row">
+    <div class="user-row-main">
+      <div class="user-avatar-circle">
         ${esc(name[0].toUpperCase())}
       </div>
       <div>
-        <div style="font-size:13px;font-weight:500">${esc(name)}${isCurrentUser?' <span style="font-size:10px;color:var(--muted)">(you)</span>':''}</div>
-        <div style="font-size:11px;color:var(--muted)">${esc(email)}</div>
-        <div style="font-size:10px;color:var(--muted);margin-top:1px;${dateColour}">${dateLabel} ${dateVal}</div>
+        <div class="user-row-name">${esc(name)}${isCurrentUser?' <span class="text-muted-10">(you)</span>':''}</div>
+        <div class="text-muted-11">${esc(email)}</div>
+        <div class="user-row-date${hasSignedIn?'':' text-amber'}">${dateLabel} ${dateVal}</div>
       </div>
     </div>
-    <div style="display:flex;gap:6px">
+    <div class="user-row-actions">
       ${!hasSignedIn?`<button class="icon-btn" onclick="resendInvite('${escJsAttr(email)}',this)" title="Resend invite email"><i class="ti ti-mail-forward"></i></button>`:''}
       <button class="icon-btn" onclick="openEditUserForm('${esc(u.id)}','${escJsAttr(email)}','${escJsAttr(name)}')" title="Edit"><i class="ti ti-edit"></i></button>
       ${!isCurrentUser?`<button class="icon-btn del" onclick="deleteUser('${esc(u.id)}','${escJsAttr(name)}')" title="Delete"><i class="ti ti-trash"></i></button>`:''}
@@ -477,7 +455,7 @@ async function saveUser(){
     if(!editingUserId){
       // Show success message briefly before reloading list
       const el = document.getElementById('usersList');
-      el.innerHTML = '<div class="empty" style="color:var(--green)"><i class="ti ti-mail"></i> Invite sent to '+esc(email)+'</div>';
+      el.innerHTML = '<div class="empty empty-success"><i class="ti ti-mail"></i> Invite sent to '+esc(email)+'</div>';
       setTimeout(loadUsers, 2000);
     } else {
       loadUsers();
@@ -507,23 +485,34 @@ async function deleteUser(id, name){
 }
 
 
-// ── Customer add/edit modal ─────────────────────────────────
-// ponytail: the old modal used to list+search *all* customers with its own
-// Add/Edit/Delete row actions; that's now redundant with the Customers inbox
-// view (ui.js _renderViewCustomers/_showCustomerDetail), so this modal is just
-// the single-customer form, opened directly from that view.
+// ── Customer add/edit form (inline in the detail column) ────
 let editingCustomerId = null;
+
+function _customerFormHtml(){
+  return '<div class="inbox-detail">'
+    + '<div class="modal-title-row">'
+    + '<div class="modal-title" id="cf-title">Add customer</div>'
+    + '<div class="modal-title-actions">'
+    + '<button class="btn" onclick="closeCustomerForm()">Cancel</button>'
+    + '<button class="btn success" id="cf-save" onclick="saveCustomer()"><i class="ti ti-check"></i> Save</button>'
+    + '</div>'
+    + '</div>'
+    + '<div class="field-row">'
+    + '<div class="field"><label>Name *</label><input type="text" id="cf-name" placeholder="Full name"></div>'
+    + '<div class="field"><label>Email</label><input type="email" id="cf-email" placeholder="optional"></div>'
+    + '</div>'
+    + '<div class="field-row">'
+    + '<div class="field"><label>Phone</label><input type="tel" id="cf-phone" placeholder="optional"></div>'
+    + '<div class="field"><label>Default address</label><input type="text" id="cf-address" placeholder="optional"></div>'
+    + '</div>'
+    + '<div class="field"><label>Notes</label><input type="text" id="cf-notes" placeholder="Any notes about this customer&hellip;"></div>'
+    + '<div id="cf-error" class="field-error-text" style="display:none"></div>'
+    + '</div>';
+}
 
 function openAddCustomer(){
   editingCustomerId = null;
-  document.getElementById('cf-name').value='';
-  document.getElementById('cf-email').value='';
-  document.getElementById('cf-phone').value='';
-  document.getElementById('cf-address').value='';
-  document.getElementById('cf-notes').value='';
-  document.getElementById('cf-error').style.display='none';
-  document.getElementById('cf-title').textContent='Add customer';
-  document.getElementById('customersModal').classList.add('open');
+  document.getElementById('inboxDetail').innerHTML = _customerFormHtml();
   document.getElementById('cf-name').focus();
   setTimeout(()=>attachGooglePlaces(document.getElementById('cf-address'), null), 50);
 }
@@ -532,21 +521,23 @@ function openEditCustomer(id){
   const c = customers.find(c=>c.id===id);
   if(!c) return;
   editingCustomerId = id;
+  document.getElementById('inboxDetail').innerHTML = _customerFormHtml();
+  document.getElementById('cf-title').textContent='Edit customer';
   document.getElementById('cf-name').value=c.name;
   document.getElementById('cf-email').value=c.email;
   document.getElementById('cf-phone').value=c.phone;
   document.getElementById('cf-address').value=c.address;
   document.getElementById('cf-notes').value=c.notes;
-  document.getElementById('cf-error').style.display='none';
-  document.getElementById('cf-title').textContent='Edit customer';
-  document.getElementById('customersModal').classList.add('open');
   document.getElementById('cf-name').focus();
   setTimeout(()=>attachGooglePlaces(document.getElementById('cf-address'), null), 50);
 }
 
 function closeCustomerForm(){
-  document.getElementById('customersModal').classList.remove('open');
-  editingCustomerId=null;
+  const id = editingCustomerId;
+  editingCustomerId = null;
+  if(id) _showCustomerDetail(id);
+  else if(_selectedCustomerId) _showCustomerDetail(_selectedCustomerId);
+  else document.getElementById('inboxDetail').innerHTML = '<div class="inbox-no-selection"><i class="ti ti-address-book"></i><p>Select a customer</p></div>';
 }
 
 function _refreshCustomersView(){
@@ -581,8 +572,11 @@ async function saveCustomer(){
       customers.push(row);
       customers.sort((a,b)=>a.name.localeCompare(b.name));
     }
-    closeCustomerForm();
-    _refreshCustomersView();
+    editingCustomerId = null;
+    _selectedCustomerId = row.id;
+    const filterEl = document.getElementById('customerViewSearch');
+    _renderViewCustomers(filterEl ? filterEl.value : '');
+    _showCustomerDetail(row.id);
   }catch(e){
     errEl.textContent=e.message; errEl.style.display='';
   }finally{
@@ -608,6 +602,198 @@ function deleteCustomer(id, name){
       alert(msg);
     }
   });
+}
+
+// ── Inventory item add/edit form (inline in the detail column) ──
+let editingInventoryItemId = null;
+
+// Suggests values already used on the "Backing" option field (e.g. Backing:Magnet)
+// that don't yet have a matching inventory item — that's the field inventory actually
+// consumes against, so it's the only one worth suggesting (skips Text/Colours noise).
+function _inventoryCandidateNames(){
+  const backingOptIds = new Set(opts.filter(o=>o.name.trim().toLowerCase()==='backing').map(o=>o.id));
+  const existing = new Set(inventoryItems.map(i=>i.name.toLowerCase()));
+  const candidates = new Set();
+  orders.forEach(o=>{
+    if(!o.options) return;
+    o.options.split('||').forEach(part=>{
+      const idx = part.indexOf(':');
+      if(idx<0 || part.slice(0,idx).trim().toLowerCase()!=='backing') return;
+      const val = part.slice(idx+1).trim();
+      if(val && !existing.has(val.toLowerCase())) candidates.add(val);
+    });
+  });
+  opts.forEach(o=>{
+    if(!backingOptIds.has(o.id) || o.display!=='dropdown' || !o.options) return;
+    o.options.split(',').forEach(v=>{
+      v=v.trim();
+      if(v && !existing.has(v.toLowerCase())) candidates.add(v);
+    });
+  });
+  return Array.from(candidates).sort((a,b)=>a.localeCompare(b));
+}
+
+function _inventoryItemFormHtml(){
+  return '<div class="inbox-detail">'
+    + '<div class="modal-title-row">'
+    + '<div class="modal-title" id="inv-title">Add inventory item</div>'
+    + '<div class="modal-title-actions">'
+    + '<button class="sort-btn-main" onclick="closeInventoryItemForm()">Cancel</button>'
+    + '<button class="btn success" id="inv-save" onclick="saveInventoryItem()"><i class="ti ti-check"></i> Save</button>'
+    + '</div>'
+    + '</div>'
+    + '<div class="field"><label>Name *</label><input type="text" id="inv-name" list="inv-name-suggestions" placeholder="e.g. Magnet">'
+    + '<datalist id="inv-name-suggestions">' + _inventoryCandidateNames().map(function(n){return '<option value="'+esc(n)+'">';}).join('') + '</datalist>'
+    + '</div>'
+    + '<div class="field"><label>Notes</label><input type="text" id="inv-notes" placeholder="Any notes about this item&hellip;"></div>'
+    + '<div id="inv-error" class="field-error-text" style="display:none"></div>'
+    + '</div>';
+}
+
+function openAddInventoryItem(){
+  editingInventoryItemId = null;
+  document.getElementById('inboxDetail').innerHTML = _inventoryItemFormHtml();
+  document.getElementById('inv-name').focus();
+}
+
+function openEditInventoryItem(id){
+  const i = inventoryItems.find(x=>x.id===id);
+  if(!i) return;
+  editingInventoryItemId = id;
+  document.getElementById('inboxDetail').innerHTML = _inventoryItemFormHtml();
+  document.getElementById('inv-title').textContent = 'Edit inventory item';
+  document.getElementById('inv-name').value = i.name;
+  document.getElementById('inv-notes').value = i.notes;
+  document.getElementById('inv-name').focus();
+}
+
+function closeInventoryItemForm(){
+  const id = editingInventoryItemId;
+  editingInventoryItemId = null;
+  if(id) _showInventoryDetail(id);
+  else if(_selectedInventoryItemId) _showInventoryDetail(_selectedInventoryItemId);
+  else document.getElementById('inboxDetail').innerHTML = '<div class="inbox-no-selection"><i class="ti ti-package"></i><p>Select an inventory item</p></div>';
+}
+
+function _refreshInventoryView(){
+  if (typeof _sidebarView !== 'undefined' && _sidebarView === 'inventory') {
+    const filterEl = document.getElementById('inventoryViewSearch');
+    _renderViewInventory(filterEl ? filterEl.value : '');
+    if (_selectedInventoryItemId) _showInventoryDetail(_selectedInventoryItemId);
+  }
+}
+
+async function saveInventoryItem(){
+  const name  = document.getElementById('inv-name').value.trim();
+  const notes = document.getElementById('inv-notes').value.trim();
+  const errEl = document.getElementById('inv-error');
+  const btn   = document.getElementById('inv-save');
+  errEl.style.display='none';
+  if(!name){ errEl.textContent='Name is required.'; errEl.style.display=''; return; }
+  btn.disabled=true; btn.innerHTML='<i class="ti ti-loader-2"></i> Saving…';
+  try{
+    const row = { id: editingInventoryItemId||nextInventoryItemId(), name, notes, archived:false };
+    await sbUpsert('inventory_items', row);
+    if(editingInventoryItemId){
+      const idx=inventoryItems.findIndex(i=>i.id===editingInventoryItemId);
+      if(idx>=0) inventoryItems[idx]=row;
+    } else {
+      inventoryItems.push(row);
+      inventoryItems.sort((a,b)=>a.name.localeCompare(b.name));
+    }
+    editingInventoryItemId = null;
+    _selectedInventoryItemId = row.id;
+    const filterEl = document.getElementById('inventoryViewSearch');
+    _renderViewInventory(filterEl ? filterEl.value : '');
+    _showInventoryDetail(row.id);
+  }catch(e){
+    errEl.textContent=e.message; errEl.style.display='';
+  }finally{
+    btn.disabled=false; btn.innerHTML='<i class="ti ti-check"></i> Save';
+  }
+}
+
+function deleteInventoryItem(id, name){
+  showConfirm(`Delete inventory item "${name}"?`, async () => {
+    try{
+      await sbDelete('inventory_items','id=eq.'+encodeURIComponent(id));
+      inventoryItems=inventoryItems.filter(i=>i.id!==id);
+      if (String(_selectedInventoryItemId) === String(id)) {
+        _selectedInventoryItemId = null;
+        const d = document.getElementById('inboxDetail');
+        if (d) d.innerHTML = '<div class="inbox-no-selection"><i class="ti ti-package"></i><p>Select an inventory item</p></div>';
+      }
+      _refreshInventoryView();
+    }catch(e){
+      const msg = e.message&&e.message.includes('409')
+        ? 'This item has stock history and cannot be deleted.'
+        : 'Delete failed: '+e.message;
+      alert(msg);
+    }
+  });
+}
+
+// ── Inventory stock receiving (inline log entry form) ────────
+let _editingReceiptId = null;
+
+function showReceiptForm(){
+  _editingReceiptId = null;
+  const panel = document.getElementById('inv-receipt-form');
+  if(!panel) return;
+  panel.style.display = '';
+  document.getElementById('rcpt-date').value = todayISO();
+  document.getElementById('rcpt-qty').value = '';
+  document.getElementById('rcpt-cost').value = '';
+  document.getElementById('rcpt-save').innerHTML = '<i class="ti ti-check"></i> Log receipt';
+  document.getElementById('rcpt-qty').focus();
+}
+
+function openEditReceiptForm(receiptId){
+  const r = inventoryReceipts.find(x=>x.id===receiptId);
+  if(!r) return;
+  _editingReceiptId = receiptId;
+  const panel = document.getElementById('inv-receipt-form');
+  if(!panel) return;
+  panel.style.display = '';
+  document.getElementById('rcpt-date').value = r.date;
+  document.getElementById('rcpt-qty').value = r.qty;
+  document.getElementById('rcpt-cost').value = r.cost || '';
+  document.getElementById('rcpt-save').innerHTML = '<i class="ti ti-check"></i> Save changes';
+  document.getElementById('rcpt-qty').focus();
+}
+
+function hideReceiptForm(){
+  _editingReceiptId = null;
+  const panel = document.getElementById('inv-receipt-form');
+  if(panel) panel.style.display = 'none';
+}
+
+async function saveInventoryReceipt(itemId){
+  const qty  = parseFloat(document.getElementById('rcpt-qty').value)||0;
+  const cost = parseFloat(document.getElementById('rcpt-cost').value)||0;
+  const date = document.getElementById('rcpt-date').value || todayISO();
+  const errEl = document.getElementById('rcpt-error');
+  if(qty<=0){ errEl.textContent='Enter a quantity received.'; errEl.style.display=''; return; }
+  errEl.style.display='none';
+  const btn = document.getElementById('rcpt-save');
+  const editingId = _editingReceiptId;
+  btn.disabled=true; btn.innerHTML='<i class="ti ti-loader-2"></i> Saving…';
+  try{
+    const row = { id: editingId || nextInventoryReceiptId(), item_id: itemId, qty, cost, date };
+    await sbUpsert('inventory_receipts', row);
+    if(editingId){
+      const idx = inventoryReceipts.findIndex(r=>r.id===editingId);
+      if(idx>=0) inventoryReceipts[idx] = normaliseInventoryReceipt(row);
+    } else {
+      inventoryReceipts.push(normaliseInventoryReceipt(row));
+    }
+    _editingReceiptId = null;
+    _showInventoryDetail(itemId);
+  }catch(e){
+    errEl.textContent=e.message; errEl.style.display='';
+  }finally{
+    btn.disabled=false; btn.innerHTML='<i class="ti ti-check"></i> Log receipt';
+  }
 }
 
 // ── Customer autocomplete in order modal ───────────────────
@@ -642,10 +828,10 @@ function initCustomerAutocomplete(){
     if(!acMatches.length){ list.style.display='none'; return; }
     list.innerHTML = acMatches.map(c=>`
       <div class="cp-option customer-suggestion" onmousedown="selectCustomer('${esc(c.id)}','${esc(c.name)}','${esc(c.address)}')">
-        <div class="customer-avatar" style="width:24px;height:24px;font-size:11px;flex-shrink:0">${esc(c.name[0]?.toUpperCase()||'?')}</div>
+        <div class="customer-avatar customer-avatar-sm">${esc(c.name[0]?.toUpperCase()||'?')}</div>
         <div>
-          <div style="font-size:12px">${esc(c.name)}</div>
-          ${c.email?`<div style="font-size:10px;color:var(--muted)">${esc(c.email)}</div>`:''}
+          <div class="text-12">${esc(c.name)}</div>
+          ${c.email?`<div class="text-muted-10">${esc(c.email)}</div>`:''}
         </div>
       </div>`).join('');
     list.style.display='';
@@ -1148,83 +1334,7 @@ async function generateBadge(url) {
   }
 }
 
-// ── Stats modal ────────────────────────────────────────────
-function openStatsModal(){
-  const grid = document.getElementById('statsGrid');
-
-  // Collect data
-  const completed = orders.filter(o=>o.status==='Complete');
-  const pending   = orders.filter(o=>o.status==='Pending');
-  const printing  = orders.filter(o=>o.status==='Printing');
-  const cancelled = orders.filter(o=>o.status==='Cancelled');
-
-  // Category breakdown
-  const catCounts={};
-  orders.forEach(o=>{
-    const cat=cats.find(c=>String(c.id)===String(o.catId));
-    const name=cat?cat.name:'Unknown';
-    catCounts[name]=(catCounts[name]||0)+1;
-  });
-
-  // Payment breakdown (completed orders only, per order)
-  const seenPay={};
-  completed.forEach(o=>{
-    if(!seenPay[o.orderId]) seenPay[o.orderId]={payment:o.payment||'No',total:0};
-    seenPay[o.orderId].total+=o.total;
-  });
-  const payBreak={};
-  const payRev={};
-  paymentOptions.forEach(p=>{ payBreak[p.name]=0; if(p.showRevenue) payRev[p.name]=0; });
-  Object.values(seenPay).forEach(({payment,total})=>{
-    if(payment in payBreak) payBreak[payment]++;
-    if(payment in payRev) payRev[payment]+=total;
-  });
-
-  // Name badge breakdown
-  const badgeCat=cats.find(c=>c.name.toLowerCase().includes('name badge'));
-  let pins=0, mags=0;
-  if(badgeCat){
-    const badges=completed.filter(o=>String(o.catId)===String(badgeCat.id));
-    pins=badges.filter(o=>o.options&&o.options.toLowerCase().includes('pin')).length;
-    mags=badges.filter(o=>o.options&&o.options.toLowerCase().includes('magnet')).length;
-  }
-
-  grid.innerHTML=`
-    <div class="stats-card">
-      <div class="stats-card-title">Order Status</div>
-      ${[['Pending',pending.length,'var(--amber)'],['Printing',printing.length,'var(--blue)'],['Completed',completed.length,'var(--green)'],['Cancelled',cancelled.length,'var(--red)']].map(([l,v,c])=>`
-        <div class="stat-break-row"><span class="stat-break-label">${l}</span><span class="stat-break-val" style="color:${c}">${v}</span></div>`).join('')}
-    </div>
-    <div class="stats-card">
-      <div class="stats-card-title">Revenue (Completed)</div>
-      ${paymentOptions.filter(p=>p.showRevenue&&!p.archived).map(p=>`
-        <div class="stat-break-row"><span class="stat-break-label">${esc(p.name)}</span><span class="stat-break-val" style="color:var(--green)">$${(payRev[p.name]||0).toFixed(2)}</span></div>`).join('')}
-      ${paymentOptions.filter(p=>!p.showRevenue&&!p.archived).map(p=>`
-        <div class="stat-break-row"><span class="stat-break-label">${esc(p.name)}</span><span class="stat-break-val">${payBreak[p.name]||0}</span></div>`).join('')}
-      <div class="stat-break-row" style="border-top:1px solid var(--border);margin-top:6px;padding-top:6px">
-        <span class="stat-break-label" style="font-weight:600;color:var(--text)">Total</span>
-        <span class="stat-break-val" style="color:var(--accent);font-weight:600">$${Object.values(payRev).reduce((s,v)=>s+v,0).toFixed(2)}</span>
-      </div>
-    </div>
-    <div class="stats-card">
-      <div class="stats-card-title">Items by Category</div>
-      ${Object.entries(catCounts).sort((a,b)=>b[1]-a[1]).map(([name,count])=>{
-        const isBadge = badgeCat && name.toLowerCase()===badgeCat.name.toLowerCase();
-        return `<div class="stat-break-row"><span class="stat-break-label">${esc(name)}</span><span class="stat-break-val">${count}</span></div>`+
-          (isBadge && (pins||mags) ? `
-            <div class="stat-break-row" style="padding-left:12px"><span class="stat-break-label" style="font-size:10px;color:var(--muted)">↳ Pin</span><span class="stat-break-val" style="font-size:11px">${pins}</span></div>
-            <div class="stat-break-row" style="padding-left:12px"><span class="stat-break-label" style="font-size:10px;color:var(--muted)">↳ Magnet</span><span class="stat-break-val" style="font-size:11px">${mags}</span></div>` : '');
-      }).join('')}
-    </div>
-  `;
-  document.getElementById('statsModal').classList.add('open');
-}
-function closeStatsModal(){ document.getElementById('statsModal').classList.remove('open'); }
-
 // ── Colours modal ─────────────────────────────────────────
-function openColourModal(){renderColourList();document.getElementById('colourModal').classList.add('open');}
-function closeColourModal(){document.getElementById('colourModal').classList.remove('open');}
-
 function renderColourList(){
   document.getElementById('colourList').innerHTML=colours.map((c,i)=>`
     <div class="colour-row">
@@ -1279,96 +1389,9 @@ async function saveColours(){
   try{
     await sbReplace('colours', colours.map(c=>({id:c.id,name:c.name,code:c.code,available:c.available})));
     setStatus('ok','Colours saved · '+colours.length+' colours');
-    closeColourModal();
   }catch(e){
     setStatus('err','Save failed: '+e.message);
   }
-}
-
-// ── Settings ───────────────────────────────────────────────
-function loadStylish(){
-  applyStylish(localStorage.getItem('pd_stylish')!=='false', false);
-}
-function applyStylish(on, save=true){
-  document.documentElement.classList.toggle('flat-ui', !on);
-  if(save) localStorage.setItem('pd_stylish', String(on));
-}
-function loadAccent(){
-  const s=localStorage.getItem('pd_accent');
-  if(s){try{const p=JSON.parse(s);applyAccent(p.a,p.a2,false);}catch(e){}}
-}
-function applyAccent(a,a2,save=true){
-  document.documentElement.style.setProperty('--accent',a);
-  document.documentElement.style.setProperty('--accent2',a2);
-  document.documentElement.style.setProperty('--base',mixHex(a,'#1a1830',0.12));
-  if(save){
-    localStorage.setItem('pd_accent',JSON.stringify({a,a2}));
-    savePreferences();
-  }
-}
-function previewAccent(hex){
-  const a2=darken(hex,0.18);
-  applyAccent(hex,a2);
-  // Deselect all swatches
-  document.querySelectorAll('.accent-swatch-circle').forEach(s=>s.classList.remove('active'));
-}
-// ponytail: base tint is a flat 12% blend, not perceptual — fine at this saturation range, revisit if a very light/neon filament colour washes it out
-function mixHex(hex1,hex2,amt){
-  const r1=parseInt(hex1.slice(1,3),16),g1=parseInt(hex1.slice(3,5),16),b1=parseInt(hex1.slice(5,7),16);
-  const r2=parseInt(hex2.slice(1,3),16),g2=parseInt(hex2.slice(3,5),16),b2=parseInt(hex2.slice(5,7),16);
-  const r=Math.round(r1*amt+r2*(1-amt)),g=Math.round(g1*amt+g2*(1-amt)),b=Math.round(b1*amt+b2*(1-amt));
-  return'#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
-}
-function darken(hex,amt){
-  let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
-  r=Math.max(0,Math.round(r*(1-amt)));g=Math.max(0,Math.round(g*(1-amt)));b=Math.max(0,Math.round(b*(1-amt)));
-  return'#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
-}
-
-function buildAccentSwatches(){
-  const list = document.getElementById('cpl-accent-sel');
-  if(!list) return;
-  const currentAccent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
-  // Clear existing options (keep the "none" entry)
-  while(list.children.length > 1) list.removeChild(list.lastChild);
-  const avail = colours.filter(c=>c.available);
-  avail.forEach(c=>{
-    const div = document.createElement('div');
-    div.className = 'cp-option' + (c.code.toLowerCase()===currentAccent.toLowerCase()?' selected':'');
-    div.onclick = ()=>selectAccentColour(c.code, c.name, div);
-    div.innerHTML = `<div class="cp-swatch" style="background:${esc(c.code)}"></div><span>${esc(c.name)}</span>`;
-    list.appendChild(div);
-  });
-  // Update button label to show current selection
-  const match = avail.find(c=>c.code.toLowerCase()===currentAccent.toLowerCase());
-  const btn = document.getElementById('cpb-accent-sel');
-  const swatch = document.getElementById('accent-sel-swatch');
-  const label = document.getElementById('accent-sel-label');
-  if(match){
-    if(swatch) swatch.style.background = match.code;
-    if(label) label.textContent = match.name;
-  } else {
-    if(swatch) swatch.style.background = currentAccent;
-    if(label) label.textContent = 'Custom';
-  }
-}
-
-function selectAccentColour(hex, name, el){
-  if(!hex){ return; } // none selected — let custom picker handle it
-  const a2=darken(hex,0.18);
-  applyAccent(hex,a2);
-  // Update picker button
-  const swatch = document.getElementById('accent-sel-swatch');
-  const label  = document.getElementById('accent-sel-label');
-  if(swatch) swatch.style.background = hex;
-  if(label)  label.textContent = name||hex;
-  // Close dropdown
-  const list = document.getElementById('cpl-accent-sel');
-  if(list){ list.classList.remove('open'); list.style.display='none'; }
-  // Update active state
-  list?.querySelectorAll('.cp-option').forEach(o=>o.classList.remove('selected'));
-  if(el) el.classList.add('selected');
-  document.getElementById('customColour').value = hex;
 }
 
 // ── Notification settings ──────────────────────────────────
@@ -1399,89 +1422,6 @@ async function saveNotificationSettings(){
     await sbUpsert('app_settings', row);
   }
 }
-
-function openSettings(){
-  if(currentUser){
-    document.getElementById('settingsEmail').value=currentUser.email||'';
-    document.getElementById('settingsName').value=currentUser.user_metadata?.display_name||'';
-  }
-  document.getElementById('settingsPassword').value='';
-  document.getElementById('settingsPasswordConfirm').value='';
-  document.getElementById('settingsPasswordError').style.display='none';
-  document.getElementById('settingsStylish').checked = localStorage.getItem('pd_stylish')!=='false';
-  buildAccentSwatches();
-  const s=localStorage.getItem('pd_accent');
-  if(s){try{document.getElementById('customColour').value=JSON.parse(s).a;}catch(e){}}
-  renderPaymentSettings();
-  loadNotificationSettings();
-  document.getElementById('settingsModal').classList.add('open');
-}
-
-function renderPaymentSettings(){
-  const el = document.getElementById('paymentOptionsList');
-  if(!el) return;
-  const usedNames = new Set(orders.map(o=>o.payment).filter(Boolean));
-  el.innerHTML = paymentOptions.map((p,i)=>`
-    <div class="payment-opt-row ${p.archived?'cat-archived':''}">
-      <span class="payment-opt-name">${esc(p.name)}</span>
-      ${p.showRevenue?'<span class="payment-opt-tag">Revenue</span>':''}
-      <div style="display:flex;gap:4px;margin-left:auto">
-        <button class="icon-btn" onclick="editPaymentOption(${i})" title="Edit"><i class="ti ti-edit"></i></button>
-        ${usedNames.has(p.name)
-          ? (p.archived
-            ? `<button class="icon-btn" onclick="togglePaymentArchive(${i})" title="Unarchive"><i class="ti ti-archive-off"></i></button>`
-            : `<button class="icon-btn" onclick="togglePaymentArchive(${i})" title="Archive"><i class="ti ti-archive"></i></button>`)
-          : `<button class="icon-btn del" onclick="removePaymentOption(${i})" title="Delete"><i class="ti ti-trash"></i></button>`}
-      </div>
-    </div>`).join('');
-}
-
-function editPaymentOption(i){
-  const p = paymentOptions[i];
-  const name = prompt('Payment option name:', p.name);
-  if(name===null) return;
-  paymentOptions[i].name = name.trim()||p.name;
-  savePaymentOptions();
-  renderPaymentSettings();
-  rebuildPaymentDropdowns();
-}
-
-function togglePaymentArchive(i){
-  paymentOptions[i].archived = !paymentOptions[i].archived;
-  savePaymentOptions();
-  renderPaymentSettings();
-}
-
-function removePaymentOption(i){
-  showConfirm('Delete this payment option?', () => {
-    paymentOptions.splice(i,1);
-    savePaymentOptions();
-    renderPaymentSettings();
-  });
-}
-
-function addPaymentOption(){
-  const name = document.getElementById('newPaymentName').value.trim();
-  if(!name){ alert('Enter a name.'); return; }
-  const isRevenue = document.getElementById('newPaymentRevenue').checked;
-  paymentOptions.push({name, archived:false, showRevenue:isRevenue});
-  savePaymentOptions();
-  document.getElementById('newPaymentName').value='';
-  document.getElementById('newPaymentRevenue').checked=false;
-  renderPaymentSettings();
-  rebuildPaymentDropdowns();
-}
-
-function rebuildPaymentDropdowns(){
-  const sel = document.getElementById('f-payment');
-  if(!sel) return;
-  const cur = sel.value;
-  sel.innerHTML = getActivePaymentOptions()
-    .map(p=>`<option value="${esc(p.name)}" ${p.name===cur?'selected':''}>${esc(p.name)}</option>`)
-    .join('');
-}
-
-function closeSettings(){document.getElementById('settingsModal').classList.remove('open');}
 
 async function applySettings(){
   const name     = document.getElementById('settingsName').value.trim();
@@ -1525,7 +1465,6 @@ async function applySettings(){
 
     savePreferences();
     await saveNotificationSettings();
-    closeSettings();
   }catch(e){
     errEl.textContent=e.message;
     errEl.style.display='';
@@ -1561,9 +1500,6 @@ document.addEventListener('click', e=>{
 });
 
 // ── Boot ───────────────────────────────────────────────────
-loadAccent();
-loadStylish();
-
 document.getElementById('setupBanner').style.display='none';
 if(DEV_MODE){
   currentUser = {id:'dev-user', email:'dev@example.com', user_metadata:{display_name:'Dev User'}};
