@@ -1005,7 +1005,7 @@ async function toggleItemPrinted(rowId, checked){
   if(!row) return;
   row.printed = checked;
   try{
-    await sbUpsert('orders', {id: row.id, printed: checked});
+    await sbPatch('orders', 'id=eq.'+encodeURIComponent(row.id), {printed: checked});
   }catch(e){
     row.printed = !checked;
     setStatus('err','Save failed: '+e.message);
@@ -1021,7 +1021,7 @@ async function toggleOrderPaid(orderId, checked){
   if(!rows.length) return;
   rows.forEach(r=>r.paid=checked);
   try{
-    await sbUpsert('orders', rows.map(r=>({id:r.id, paid:checked})));
+    await sbPatch('orders', 'order_id=eq.'+encodeURIComponent(orderId), {paid: checked});
   }catch(e){
     rows.forEach(r=>r.paid=!checked);
     setStatus('err','Save failed: '+e.message);
@@ -1050,7 +1050,7 @@ async function _consumeInventoryForOrder(rows){
       }catch(e){ /* non-fatal — don't block the status update over a logging failure */ }
     }
     row.inv_consumed = true;
-    try{ await sbUpsert('orders', {id: row.id, inv_consumed:true}); }catch(e){}
+    try{ await sbPatch('orders', 'id=eq.'+encodeURIComponent(row.id), {inv_consumed:true}); }catch(e){}
   }
 }
 
@@ -1070,7 +1070,7 @@ async function _maybeAdvanceStatus(orderId){
   if(!next) return;
   rows.forEach(r=>r.status=next);
   try{
-    await sbUpsert('orders', rows.map(r=>({id:r.id, status:next})));
+    await sbPatch('orders', 'order_id=eq.'+encodeURIComponent(orderId), {status: next});
     if(next==='Complete') await _consumeInventoryForOrder(rows);
     setStatus('ok', 'Status advanced to '+next);
   }catch(e){

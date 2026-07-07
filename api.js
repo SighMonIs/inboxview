@@ -409,15 +409,26 @@ async function sbGet(table, query){
 
 async function sbUpsert(table, row){
   if(DEV_MODE) return Array.isArray(row)?row:[row]; // in-memory fixtures only — no real backend to write to
-  // on_conflict=id is required for partial-column payloads (e.g. {id, paid}) — without it,
-  // PostgREST can fail to match the existing row and falls through to an INSERT, which then
-  // fails on whatever NOT NULL columns weren't included in the partial payload.
-  const res = await sbFetch(sbUrl(table, '?on_conflict=id'), {
+  const res = await sbFetch(sbUrl(table), {
     method: 'POST',
     headers: { ...SB_HEADERS(), 'Prefer': 'resolution=merge-duplicates,return=representation' },
     body: JSON.stringify(row)
   });
   if(!res.ok){ const t=await res.text(); throw new Error('Upsert failed: '+t.slice(0,200)); }
+  return res.json();
+}
+
+// For toggling a few columns on row(s) we know already exist — a real UPDATE
+// (PostgREST PATCH) can never fall through to an INSERT the way upsert can,
+// so it can't trip a NOT NULL violation on columns the partial payload omits.
+async function sbPatch(table, filter, fields){
+  if(DEV_MODE) return [fields];
+  const res = await sbFetch(sbUrl(table, '?'+filter), {
+    method: 'PATCH',
+    headers: { ...SB_HEADERS(), 'Prefer': 'return=representation' },
+    body: JSON.stringify(fields)
+  });
+  if(!res.ok){ const t=await res.text(); throw new Error('Update failed: '+t.slice(0,200)); }
   return res.json();
 }
 
