@@ -1481,7 +1481,10 @@ function _showInboxDetailFromData(orderId, rows) {
       const idx = p.indexOf(':'); if (idx >= 0) parsedOpts[p.slice(0,idx).trim()] = p.slice(idx+1).trim();
     });
     const catOpts = opts.filter(o => String(o.catId) === String(row.catId));
-    const isBadge = cat && cat.name.toLowerCase().indexOf('name badge') !== -1;
+    // Any category with a "Backing" option can generate a 3MF — the generator
+    // itself (badge/render.js) already supports Pin/Magnet/Keychain backings,
+    // this isn't specific to the "Name Badge" category.
+    const isBadge = catOpts.some(o => o.name.trim().toLowerCase() === 'backing');
 
     const optLines = catOpts.map(opt => {
       const val = parsedOpts[opt.name];
