@@ -1,0 +1,32 @@
+name: Database backup
+
+on:
+  schedule:
+    - cron: '0 16 * * *'  # 2am Sydney time (UTC+10) — cron runs in UTC
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install postgresql-client
+        run: sudo apt-get update && sudo apt-get install --yes postgresql-client
+
+      - name: Dump database
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          pg_dump "$DB_URL" --no-owner --no-privileges --format=plain -f backup.sql
+          gzip backup.sql
+
+      - name: Set backup date
+        id: vars
+        run: echo "date=$(date +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload backup
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ steps.vars.outputs.date }}
+          path: backup.sql.gz
+          retention-days: 30
+          if-no-files-found: error
